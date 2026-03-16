@@ -1,0 +1,5 @@
+{
+  "name": "Gestão de Pendências TOMO BI",
+  "description": "Aplicativo para visualização e gestão de ocorrências e planos de ação do TOMO BI, com foco no acompanhamento de pendências por supervisor e unidade.",
+  "requestFramePermissions": []
+}
