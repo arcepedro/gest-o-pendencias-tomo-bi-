@@ -16,7 +16,9 @@ import {
   RefreshCw,
   Loader2,
   FileText,
-  Eye
+  Eye,
+  Menu,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -49,7 +51,9 @@ export default function App() {
   const [selectedFarm, setSelectedFarm] = useState<string>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('All');
+  const [selectedDaysRemaining, setSelectedDaysRemaining] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [actionPlans, setActionPlans] = useState<ActionPlan[]>([]);
@@ -142,6 +146,7 @@ export default function App() {
     setSelectedFarm('All');
     setSelectedCategory('All');
     setSelectedSubcategory('All');
+    setSelectedDaysRemaining('All');
     setSearchQuery('');
     setSelectedSupervisorDetail(null);
   };
@@ -196,10 +201,26 @@ export default function App() {
                             (ap.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                             (ap.supervisor || '').toLowerCase().includes(searchQuery.toLowerCase());
 
+      const diasRestantesKey = ap.rawData ? Object.keys(ap.rawData).find(k => k.toLowerCase() === 'dias_restantes') : null;
+      const diasRestantesValue = diasRestantesKey ? ap.rawData![diasRestantesKey] : null;
+      const diasRestantes = (diasRestantesValue !== null && diasRestantesValue !== undefined && !isNaN(Number(diasRestantesValue))) ? Number(diasRestantesValue) : null;
+      
+      let matchesDaysRemaining = true;
+      if (selectedDaysRemaining !== 'All') {
+        if (diasRestantes === null) {
+          matchesDaysRemaining = false; // If filter is active but no data, hide it
+        } else {
+          if (selectedDaysRemaining === 'vencido') matchesDaysRemaining = diasRestantes <= 0;
+          else if (selectedDaysRemaining === '0-5') matchesDaysRemaining = diasRestantes > 0 && diasRestantes <= 5;
+          else if (selectedDaysRemaining === '6-15') matchesDaysRemaining = diasRestantes > 5 && diasRestantes <= 15;
+          else if (selectedDaysRemaining === '16+') matchesDaysRemaining = diasRestantes > 15;
+        }
+      }
+
       return matchesSupervisor && matchesUnit && matchesYear && matchesMonth && matchesDay && 
-             matchesFarm && matchesCategory && matchesSubcategory && matchesSearch;
+             matchesFarm && matchesCategory && matchesSubcategory && matchesSearch && matchesDaysRemaining;
     });
-  }, [actionPlans, occurrenceDateMap, occurrenceMap, selectedSupervisors, selectedUnit, selectedYear, selectedMonth, selectedDay, selectedFarm, selectedCategory, selectedSubcategory, searchQuery]);
+  }, [actionPlans, occurrenceDateMap, occurrenceMap, selectedSupervisors, selectedUnit, selectedYear, selectedMonth, selectedDay, selectedFarm, selectedCategory, selectedSubcategory, searchQuery, selectedDaysRemaining]);
 
   const supervisorStats = useMemo(() => {
     return supervisors
@@ -397,44 +418,73 @@ export default function App() {
   return (
     <div className="min-h-screen bg-bg-dark text-white font-sans selection:bg-accent/20 selection:text-accent">
       {/* Sidebar / Navigation */}
-      <nav className="fixed left-0 top-0 h-full w-72 bg-sidebar text-white/60 p-6 flex flex-col z-50 shadow-[20px_0_50px_rgba(0,0,0,0.05)] border-r border-accent/10 overflow-y-auto backdrop-blur-xl">
-        <div className="mb-10 flex flex-col items-center text-center">
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-accent to-emerald-600 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
-            <div className="relative w-16 h-16 bg-transparent rounded-2xl flex items-center justify-center mb-4 overflow-hidden">
-              <img 
-                src="https://ifudxfllenrtbhollajq.supabase.co/storage/v1/object/sign/planilha/Design%20sem%20nome%20(1).jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MzYxYzhmMC1mYjlhLTRlOGItOTFiYi0wZDVhNjdkMDE2YzEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwbGFuaWxoYS9EZXNpZ24gc2VtIG5vbWUgKDEpLmpwZyIsImlhdCI6MTc3MzE0MzQxMSwiZXhwIjoxODA0Njc5NDExfQ.j65TS5OS-eA3kMVjqGOfT7vh1c9n8rcmPBJbJpJqSzs" 
-                alt="Logo" 
-                className="w-full h-full object-contain scale-110"
-                referrerPolicy="no-referrer"
-              />
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      <nav className={`fixed left-0 top-0 h-full w-72 bg-sidebar text-white/60 p-6 flex flex-col z-50 shadow-[20px_0_50px_rgba(0,0,0,0.05)] border-r border-accent/10 overflow-y-auto backdrop-blur-xl transition-transform duration-300 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex justify-between items-center mb-10 lg:block">
+          <div className="flex flex-col items-center text-center w-full">
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-accent to-emerald-600 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
+              <div className="relative w-16 h-16 bg-transparent rounded-2xl flex items-center justify-center mb-4 overflow-hidden">
+                <img 
+                  src="https://ifudxfllenrtbhollajq.supabase.co/storage/v1/object/sign/planilha/Design%20sem%20nome%20(1).jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MzYxYzhmMC1mYjlhLTRlOGItOTFiYi0wZDVhNjdkMDE2YzEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwbGFuaWxoYS9EZXNpZ24gc2VtIG5vbWUgKDEpLmpwZyIsImlhdCI6MTc3MzE0MzQxMSwiZXhwIjoxODA0Njc5NDExfQ.j65TS5OS-eA3kMVjqGOfT7vh1c9n8rcmPBJbJpJqSzs" 
+                  alt="Logo" 
+                  className="w-full h-full object-contain scale-110"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+            </div>
+            <h1 className="text-lg font-black tracking-tighter text-white uppercase italic">Gestão de Pendências</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="h-[1px] w-4 bg-accent/30" />
+              <p className="text-[9px] uppercase tracking-[0.3em] font-black text-white/60">TOMO BI</p>
+              <div className="h-[1px] w-4 bg-accent/30" />
             </div>
           </div>
-          <h1 className="text-lg font-black tracking-tighter text-white uppercase italic">Gestão de Pendências</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <div className="h-[1px] w-4 bg-accent/30" />
-            <p className="text-[9px] uppercase tracking-[0.3em] font-black text-white/60">TOMO BI</p>
-            <div className="h-[1px] w-4 bg-accent/30" />
-          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="lg:hidden p-2 text-white/40 hover:text-white transition-colors"
+          >
+            <X size={24} />
+          </button>
         </div>
 
         <div className="space-y-2 mb-8">
           <button 
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => {
+              setActiveTab('dashboard');
+              setIsSidebarOpen(false);
+            }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 border glow-hover ${activeTab === 'dashboard' ? 'bg-accent/10 text-white border-accent/20 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : 'hover:bg-accent/5 border-transparent text-white/40 hover:text-white'}`}
           >
             <LayoutDashboard size={18} />
             <span className="text-sm font-black uppercase tracking-tight">Dashboard</span>
           </button>
           <button 
-            onClick={() => setActiveTab('occurrences')}
+            onClick={() => {
+              setActiveTab('occurrences');
+              setIsSidebarOpen(false);
+            }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 border glow-hover ${activeTab === 'occurrences' ? 'bg-accent/10 text-white border-accent/20 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : 'hover:bg-accent/5 border-transparent text-white/40 hover:text-white'}`}
           >
             <AlertCircle size={18} />
             <span className="text-sm font-black uppercase tracking-tight">Ocorrências</span>
           </button>
           <button 
-            onClick={() => setActiveTab('actionPlans')}
+            onClick={() => {
+              setActiveTab('actionPlans');
+              setIsSidebarOpen(false);
+            }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 border glow-hover ${activeTab === 'actionPlans' ? 'bg-accent/10 text-white border-accent/20 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : 'hover:bg-accent/5 border-transparent text-white/40 hover:text-white'}`}
           >
             <ClipboardList size={18} />
@@ -531,6 +581,21 @@ export default function App() {
             </select>
           </div>
 
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase font-black text-white/40 tracking-widest block">Dias Restantes</label>
+            <select 
+              value={selectedDaysRemaining}
+              onChange={(e) => setSelectedDaysRemaining(e.target.value)}
+              className="w-full bg-accent/5 border border-accent/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-accent text-accent/80 cursor-pointer appearance-none"
+            >
+              <option value="All" className="bg-sidebar">Todos os Prazos</option>
+              <option value="vencido" className="bg-sidebar">Vencidos (≤ 0)</option>
+              <option value="0-5" className="bg-sidebar">Crítico (1-5 dias)</option>
+              <option value="6-15" className="bg-sidebar">Alerta (6-15 dias)</option>
+              <option value="16+" className="bg-sidebar">No Prazo (16+ dias)</option>
+            </select>
+          </div>
+
           <div className="pt-6">
             <button 
               onClick={() => {
@@ -539,6 +604,7 @@ export default function App() {
                 setSelectedFarm('All');
                 setSelectedCategory('All');
                 setSelectedSubcategory('All');
+                setSelectedDaysRemaining('All');
                 setSelectedDay('All');
                 setSelectedMonth('All');
                 setSelectedYear('All');
@@ -565,24 +631,32 @@ export default function App() {
       </nav>
 
       {/* Main Content */}
-      <main className="ml-72 min-h-screen bg-bg-dark relative">
+      <main className="lg:ml-72 min-h-screen bg-bg-dark relative">
         {/* Background glow */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[150px]" />
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[150px]" />
         </div>
         {/* Header */}
-        <header className="bg-sidebar/50 backdrop-blur-xl border-b border-accent/10 px-8 py-6 flex justify-between items-center sticky top-0 z-40">
-          <div>
-            <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic">
-              {activeTab === 'dashboard' ? 'Dashboard Geral' : 
-               activeTab === 'occurrences' ? 'Ocorrências Agrícolas' : 'Planos de Ação'}
-            </h2>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">
-                {CURRENT_DATE.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-              </p>
+        <header className="bg-sidebar/50 backdrop-blur-xl border-b border-accent/10 px-4 lg:px-8 py-6 flex justify-between items-center sticky top-0 z-40">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden p-2 text-white/40 hover:text-white transition-colors"
+            >
+              <Menu size={24} />
+            </button>
+            <div>
+              <h2 className="text-xl lg:text-2xl font-black text-white uppercase tracking-tighter italic">
+                {activeTab === 'dashboard' ? 'Dashboard Geral' : 
+                 activeTab === 'occurrences' ? 'Ocorrências Agrícolas' : 'Planos de Ação'}
+              </h2>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">
+                  {CURRENT_DATE.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-6">
@@ -596,7 +670,7 @@ export default function App() {
           </div>
         </header>
 
-        <div className="p-8">
+        <div className="p-4 lg:p-8">
           <AnimatePresence mode="wait">
             {activeTab === 'dashboard' && !selectedSupervisorDetail && (
               <motion.div 
@@ -747,7 +821,9 @@ export default function App() {
                       Ver todas
                     </button>
                   </div>
-                  <div className="overflow-x-auto">
+                  
+                  {/* Desktop Table */}
+                  <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-accent/5 border-b border-accent/10 text-white/40">
@@ -778,6 +854,32 @@ export default function App() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Mobile Cards */}
+                  <div className="lg:hidden divide-y divide-accent/10">
+                    {filteredOccurrences.slice(0, 5).map((occ) => (
+                      <div key={occ.id} className="p-5 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-mono font-black text-accent/40">Nº {occ.number}</span>
+                          <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">{occ.supervisor}</span>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-black text-white uppercase tracking-tight">{occ.category}</h4>
+                          <p className="text-[10px] text-white/40 italic">{occ.subcategory}</p>
+                        </div>
+                        <div className="flex gap-4">
+                          <div>
+                            <p className="text-[8px] uppercase font-black text-white/40 tracking-widest">Fazenda</p>
+                            <p className="text-[10px] font-black text-accent uppercase">{occ.farm}</p>
+                          </div>
+                          <div>
+                            <p className="text-[8px] uppercase font-black text-white/40 tracking-widest">Talhão</p>
+                            <p className="text-[10px] font-black text-accent uppercase">{occ.plot}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </motion.div>
@@ -877,78 +979,133 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-                <div className="bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-3xl overflow-hidden shadow-2xl">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-accent/5 border-b border-accent/10 text-accent/40">
-                          <th className="p-5 text-[10px] uppercase tracking-widest font-black">Status</th>
-                          <th className="p-5 text-[10px] uppercase tracking-widest font-black">Nº Ocorrência</th>
-                          <th className="p-5 text-[10px] uppercase tracking-widest font-black">Unidade</th>
-                          <th className="p-5 text-[10px] uppercase tracking-widest font-black">Supervisor</th>
-                          <th className="p-5 text-[10px] uppercase tracking-widest font-black">Fazenda / Talhão</th>
-                          <th className="p-5 text-[10px] uppercase tracking-widest font-black">Categoria</th>
-                          <th className="p-5 text-[10px] uppercase tracking-widest font-black">Data Criação</th>
-                          <th className="p-5 text-[10px] uppercase tracking-widest font-black text-right">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-accent/10">
-                        {filteredOccurrences.map((occ) => (
-                          <tr key={occ.id} className="hover:bg-accent/5 transition-colors group cursor-pointer">
-                            <td className="p-5">
-                              {occ.isCompleted ? (
-                                <div className="flex items-center gap-2 text-emerald-600 bg-emerald-600/10 w-fit px-3 py-1 rounded-full border border-emerald-600/20">
-                                  <CheckCircle2 size={12} />
-                                  <span className="text-[10px] font-black uppercase tracking-widest">Concluído</span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2 text-amber-600 bg-amber-600/10 w-fit px-3 py-1 rounded-full border border-amber-600/20">
-                                  <Clock size={12} />
-                                  <span className="text-[10px] font-black uppercase tracking-widest">Pendente</span>
-                                </div>
-                              )}
-                            </td>
-                            <td className="p-5 font-mono text-sm font-black text-accent/40">{occ.number}</td>
-                            <td className="p-5">
-                              <span className="text-[10px] px-2 py-1 bg-accent/5 text-accent/60 rounded-md font-black border border-accent/10 uppercase tracking-widest whitespace-nowrap">{occ.unit}</span>
-                            </td>
-                            <td className="p-5 text-sm text-accent font-black">{occ.supervisor}</td>
-                            <td className="p-5">
-                              <div className="text-sm font-black text-accent uppercase tracking-tight">{occ.farm}</div>
-                              <div className="text-[10px] text-accent/60 uppercase font-black tracking-widest mt-1">Talhão: {occ.plot}</div>
-                              {occ.sector && <div className="text-[10px] text-accent/60 uppercase font-black tracking-widest mt-1">Setor: {occ.sector}</div>}
-                            </td>
-                            <td className="p-5">
-                              <div 
-                                className="text-sm font-black text-accent cursor-pointer hover:text-emerald-600 uppercase tracking-tight transition-colors"
-                                onClick={() => setSelectedOccurrence(occ)}
-                              >
-                                {occ.category}
-                              </div>
-                              <div 
-                                className="text-[10px] text-accent/60 italic mt-1 cursor-pointer hover:text-emerald-600 transition-colors"
-                                onClick={() => setSelectedOccurrence(occ)}
-                              >
-                                {occ.subcategory}
-                              </div>
-                            </td>
-                            <td className="p-5 text-xs text-accent/60 font-mono font-black">
-                              {new Date(occ.createdAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
-                            </td>
-                            <td className="p-5 text-right">
-                              <button 
-                                onClick={() => setSelectedOccurrence(occ)}
-                                className="p-2 hover:bg-accent/10 rounded-xl text-accent/40 hover:text-accent transition-all hover:scale-110"
-                              >
-                                <Eye size={18} />
-                              </button>
-                            </td>
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-3xl overflow-hidden shadow-2xl">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-accent/5 border-b border-accent/10 text-accent/40">
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Status</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Nº Ocorrência</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Unidade</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Supervisor</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Fazenda / Talhão</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Categoria</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Data Criação</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black text-right">Ações</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-accent/10">
+                          {filteredOccurrences.map((occ) => (
+                            <tr key={occ.id} className="hover:bg-accent/5 transition-colors group cursor-pointer">
+                              <td className="p-5">
+                                {occ.isCompleted ? (
+                                  <div className="flex items-center gap-2 text-emerald-600 bg-emerald-600/10 w-fit px-3 py-1 rounded-full border border-emerald-600/20">
+                                    <CheckCircle2 size={12} />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Concluído</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 text-amber-600 bg-amber-600/10 w-fit px-3 py-1 rounded-full border border-amber-600/20">
+                                    <Clock size={12} />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Pendente</span>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="p-5 font-mono text-sm font-black text-accent/40">{occ.number}</td>
+                              <td className="p-5">
+                                <span className="text-[10px] px-2 py-1 bg-accent/5 text-accent/60 rounded-md font-black border border-accent/10 uppercase tracking-widest whitespace-nowrap">{occ.unit}</span>
+                              </td>
+                              <td className="p-5 text-sm text-accent font-black">{occ.supervisor}</td>
+                              <td className="p-5">
+                                <div className="text-sm font-black text-accent uppercase tracking-tight">{occ.farm}</div>
+                                <div className="text-[10px] text-accent/60 uppercase font-black tracking-widest mt-1">Talhão: {occ.plot}</div>
+                                {occ.sector && <div className="text-[10px] text-accent/60 uppercase font-black tracking-widest mt-1">Setor: {occ.sector}</div>}
+                              </td>
+                              <td className="p-5">
+                                <div 
+                                  className="text-sm font-black text-accent cursor-pointer hover:text-emerald-600 uppercase tracking-tight transition-colors"
+                                  onClick={() => setSelectedOccurrence(occ)}
+                                >
+                                  {occ.category}
+                                </div>
+                                <div 
+                                  className="text-[10px] text-accent/60 italic mt-1 cursor-pointer hover:text-emerald-600 transition-colors"
+                                  onClick={() => setSelectedOccurrence(occ)}
+                                >
+                                  {occ.subcategory}
+                                </div>
+                              </td>
+                              <td className="p-5 text-xs text-accent/60 font-mono font-black">
+                                {new Date(occ.createdAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                              </td>
+                              <td className="p-5 text-right">
+                                <button 
+                                  onClick={() => setSelectedOccurrence(occ)}
+                                  className="p-2 hover:bg-accent/10 rounded-xl text-accent/40 hover:text-accent transition-all hover:scale-110"
+                                >
+                                  <Eye size={18} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
+
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden space-y-4">
+                    {filteredOccurrences.map((occ) => (
+                      <div 
+                        key={occ.id} 
+                        onClick={() => setSelectedOccurrence(occ)}
+                        className="bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-2xl p-5 shadow-lg active:scale-[0.98] transition-all"
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-mono font-black text-accent/40 uppercase tracking-widest">Nº {occ.number}</span>
+                            <h4 className="text-sm font-black text-white uppercase tracking-tight">{occ.category}</h4>
+                          </div>
+                          {occ.isCompleted ? (
+                            <div className="flex items-center gap-1 text-emerald-600 bg-emerald-600/10 px-2 py-1 rounded-full border border-emerald-600/20">
+                              <CheckCircle2 size={10} />
+                              <span className="text-[8px] font-black uppercase tracking-widest">Concluído</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-amber-600 bg-amber-600/10 px-2 py-1 rounded-full border border-amber-600/20">
+                              <Clock size={10} />
+                              <span className="text-[8px] font-black uppercase tracking-widest">Pendente</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <p className="text-[8px] uppercase font-black text-white/40 tracking-widest mb-0.5">Fazenda</p>
+                            <p className="text-[10px] font-black text-accent uppercase">{occ.farm}</p>
+                          </div>
+                          <div>
+                            <p className="text-[8px] uppercase font-black text-white/40 tracking-widest mb-0.5">Talhão</p>
+                            <p className="text-[10px] font-black text-accent uppercase">{occ.plot}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-4 border-t border-accent/5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-lg bg-accent/10 flex items-center justify-center">
+                              <User size={12} className="text-accent" />
+                            </div>
+                            <span className="text-[9px] font-black text-white/60 uppercase tracking-tight">{occ.supervisor}</span>
+                          </div>
+                          <span className="text-[9px] font-mono font-black text-white/30">
+                            {new Date(occ.createdAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </motion.div>
           )}
@@ -977,12 +1134,12 @@ export default function App() {
                   const occ = occurrenceMap[ap.occurrenceId];
 
                   return (
-                    <div key={ap.id} className="bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-3xl p-8 shadow-2xl hover:border-accent/30 transition-all group relative overflow-hidden">
+                    <div key={ap.id} className="bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-3xl p-5 lg:p-8 shadow-2xl hover:border-accent/30 transition-all group relative overflow-hidden">
                       <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${ap.isCompleted ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
                       
-                      <div className="flex flex-col lg:flex-row gap-8 pl-4">
+                      <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 pl-4">
                         <div className="flex-grow">
-                          <div className="flex items-center gap-3 mb-6">
+                          <div className="flex flex-wrap items-center gap-3 mb-4 lg:mb-6">
                             <span 
                               className="text-[10px] font-mono bg-accent/10 text-accent/60 px-3 py-1 rounded-md border border-accent/10 cursor-pointer hover:bg-accent hover:text-white transition-colors uppercase tracking-widest font-black"
                               onClick={() => occ && setSelectedOccurrence(occ)}
@@ -990,42 +1147,44 @@ export default function App() {
                               {ap.occurrenceId}
                             </span>
                             <span className="text-accent/20">•</span>
-                            <span className="text-[10px] font-black text-accent/60 uppercase tracking-widest">{ap.unit}</span>
+                            <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">{ap.unit}</span>
                             {occ && (
                               <>
                                 <span className="text-accent/20">•</span>
-                                <span className="text-[10px] font-black text-accent/60 uppercase tracking-widest">{occ.category}</span>
+                                <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">{occ.category}</span>
                               </>
                             )}
                             {ap.isCompleted ? (
-                              <span className="ml-auto text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-600/10 px-3 py-1 rounded-full border border-emerald-600/20">Concluído</span>
+                              <span className="lg:ml-auto text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-600/10 px-3 py-1 rounded-full border border-emerald-600/20">Concluído</span>
                             ) : (
-                              <span className="ml-auto text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-600/10 px-3 py-1 rounded-full border border-amber-600/20 flex items-center gap-1">
+                              <span className="lg:ml-auto text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-600/10 px-3 py-1 rounded-full border border-amber-600/20 flex items-center gap-1">
                                 <Clock size={10} /> Pendente
                               </span>
                             )}
                           </div>
                           
-                          <h4 className="text-2xl font-black mb-4 text-accent uppercase tracking-tighter italic">{ap.description}</h4>
+                          <h4 className="text-xl lg:text-2xl font-black mb-4 text-white uppercase tracking-tighter italic">{ap.description}</h4>
                           
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                             <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
-                              <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Fazenda</span>
-                              <span className="text-xs font-black text-accent uppercase tracking-tight">{ap.farm || '-'}</span>
+                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Fazenda</span>
+                              <span className="text-xs font-black text-white uppercase tracking-tight">{ap.farm || '-'}</span>
                             </div>
                             <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
-                              <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Talhão</span>
-                              <span className="text-xs font-black text-accent uppercase tracking-tight">{ap.plot || '-'}</span>
+                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Talhão</span>
+                              <span className="text-xs font-black text-white uppercase tracking-tight">{ap.plot || '-'}</span>
                             </div>
                             <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
-                              <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Data Criação</span>
-                              <span className="text-xs font-black text-accent uppercase tracking-tight">{ap.createdAt ? new Date(ap.createdAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'}</span>
+                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Data Criação</span>
+                              <span className="text-xs font-black text-white uppercase tracking-tight">{ap.createdAt ? new Date(ap.createdAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'}</span>
                             </div>
                             <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
-                              <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Período</span>
-                              <span className="text-xs font-black text-accent uppercase tracking-tight">
-                                {ap.startDate ? new Date(ap.startDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'} - {ap.endDate ? new Date(ap.endDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'}
-                              </span>
+                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">ID Ocorrência</span>
+                              <span className="text-xs font-black text-white uppercase tracking-tight">{ap.occurrenceId}</span>
+                            </div>
+                            <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
+                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Excluída</span>
+                              <span className="text-xs font-black text-white uppercase tracking-tight">{ap.rawData?.['EXCLUÍDA'] || ap.rawData?.['Excluída'] || ap.rawData?.['excluida'] || 'ATIVA'}</span>
                             </div>
                           </div>
 
@@ -1034,7 +1193,7 @@ export default function App() {
                               {Object.entries(ap.rawData).map(([key, value]) => {
                                 const lowerKey = key.toLowerCase();
                                 if (!value || 
-                                    ['id', 'occurrenceid', 'unit', 'creator', 'supervisor', 'createdat', 'startdate', 'enddate', 'description', 'iscompleted', 'rawData', 'farm', 'plot'].includes(lowerKey) ||
+                                    ['id', 'occurrenceid', 'unit', 'creator', 'supervisor', 'createdat', 'startdate', 'enddate', 'description', 'iscompleted', 'rawData', 'farm', 'plot', 'excluída', 'excluida', 'id ocorrência', 'id ocorrencia'].includes(lowerKey) ||
                                     lowerKey.includes('data') || 
                                     lowerKey === 'responsável' || 
                                     lowerKey === 'responsavel' ||
@@ -1047,18 +1206,24 @@ export default function App() {
                                     lowerKey === 'fazenda' ||
                                     lowerKey === 'talhão' ||
                                     lowerKey === 'talhao' ||
-                                    lowerKey === 'início' ||
-                                    lowerKey === 'inicio' ||
-                                    lowerKey === 'fim' ||
                                     lowerKey === 'concluída' ||
                                     lowerKey === 'concluida' ||
                                     lowerKey === 'criador'
                                 ) return null;
                                 
                                 return (
-                                  <div key={key} className="flex flex-col">
-                                    <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest truncate" title={key}>{key}</span>
-                                    <span className="text-xs text-accent/80 font-black uppercase tracking-tight">{String(value)}</span>
+                                  <div key={key} className={`flex flex-col p-2 rounded-lg transition-all ${
+                                    lowerKey === 'dias_restantes' ? 'bg-orange-500/20 border border-orange-500/30' : 
+                                    (lowerKey.includes('início') || lowerKey.includes('inicio') || lowerKey.includes('fim') || lowerKey.includes('prazo')) ? 'bg-accent/20 border border-accent/30' : ''
+                                  }`}>
+                                    <span className={`text-[10px] uppercase font-black tracking-widest truncate ${
+                                      lowerKey === 'dias_restantes' ? 'text-orange-400' : 
+                                      (lowerKey.includes('início') || lowerKey.includes('inicio') || lowerKey.includes('fim') || lowerKey.includes('prazo')) ? 'text-accent' : 'text-white/40'
+                                    }`} title={key}>{key}</span>
+                                    <span className={`text-xs font-black uppercase tracking-tight ${
+                                      lowerKey === 'dias_restantes' ? 'text-orange-500 text-lg' : 
+                                      (lowerKey.includes('início') || lowerKey.includes('inicio') || lowerKey.includes('fim') || lowerKey.includes('prazo')) ? 'text-white' : 'text-white'
+                                    }`}>{String(value)}</span>
                                   </div>
                                 );
                               })}
@@ -1066,9 +1231,9 @@ export default function App() {
                           )}
                           
                           <div className="flex flex-wrap gap-8 mt-8 pt-8 border-t border-accent/10">
-                            <div className="flex items-center gap-2 text-[10px] text-accent/60 uppercase tracking-widest">
+                            <div className="flex items-center gap-2 text-[10px] text-white/60 uppercase tracking-widest">
                               <User size={14} className="text-accent" />
-                              <span className="font-black">Resp: <span className="text-accent">{ap.supervisor}</span></span>
+                              <span className="font-black">Resp: <span className="text-white">{ap.supervisor}</span></span>
                             </div>
                           </div>
                         </div>
