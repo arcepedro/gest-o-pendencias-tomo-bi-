@@ -159,6 +159,19 @@ export default function App() {
     return map;
   }, [occurrences]);
 
+  // Helper to safely format dates for display
+  const formatDateSafe = (dateStr: string | undefined | null) => {
+    if (!dateStr) return '-';
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return '-';
+      // Use UTC to avoid timezone shifts that can change the day
+      return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+    } catch (e) {
+      return '-';
+    }
+  };
+
   const filteredOccurrences = useMemo(() => {
     return occurrences.filter(o => {
       const date = new Date(o.createdAt);
@@ -178,7 +191,7 @@ export default function App() {
                             (o.plot || '').toLowerCase().includes(searchQuery.toLowerCase());
 
       return matchesSupervisor && matchesUnit && matchesYear && matchesMonth && matchesDay && 
-             matchesFarm && matchesCategory && matchesSubcategory && matchesSearch && !o.isDeleted;
+             matchesFarm && matchesCategory && matchesSubcategory && matchesSearch;
     });
   }, [occurrences, selectedSupervisors, selectedUnit, selectedYear, selectedMonth, selectedDay, selectedFarm, selectedCategory, selectedSubcategory, searchQuery]);
 
@@ -236,7 +249,7 @@ export default function App() {
           const matchesCategory = selectedCategory === 'All' || o.category === selectedCategory;
           const matchesSubcategory = selectedSubcategory === 'All' || o.subcategory === selectedSubcategory;
           
-          return o.supervisor === name && !o.isDeleted && 
+          return o.supervisor === name && 
                  matchesUnit && matchesYear && matchesMonth && matchesDay &&
                  matchesFarm && matchesCategory && matchesSubcategory;
         });
@@ -283,7 +296,6 @@ export default function App() {
       const matchesSubcategory = selectedSubcategory === 'All' || o.subcategory === selectedSubcategory;
       
       return o.supervisor === selectedSupervisorDetail && 
-             !o.isDeleted && 
              matchesUnit && matchesYear && matchesMonth && matchesDay &&
              matchesFarm && matchesCategory && matchesSubcategory;
     });
@@ -369,7 +381,7 @@ export default function App() {
           >
             <div className="w-16 h-16 bg-transparent rounded-2xl flex items-center justify-center relative overflow-hidden">
               <img 
-                src="https://ifudxfllenrtbhollajq.supabase.co/storage/v1/object/sign/planilha/Design%20sem%20nome%20(1).jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MzYxYzhmMC1mYjlhLTRlOGItOTFiYi0wZDVhNjdkMDE2YzEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwbGFuaWxoYS9EZXNpZ24gc2VtIG5vbWUgKDEpLmpwZyIsImlhdCI6MTc3MzE0MzQxMSwiZXhwIjoxODA0Njc5NDExfQ.j65TS5OS-eA3kMVjqGOfT7vh1c9n8rcmPBJbJpJqSzs" 
+                src="https://ifudxfllenrtbhollajq.supabase.co/storage/v1/object/sign/planilha/Captura%20de%20tela%202026-03-24%20111819.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MzYxYzhmMC1mYjlhLTRlOGItOTFiYi0wZDVhNjdkMDE2YzEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwbGFuaWxoYS9DYXB0dXJhIGRlIHRlbGEgMjAyNi0wMy0yNCAxMTE4MTkucG5nIiwiaWF0IjoxNzc0MzYyMDMzLCJleHAiOjE4MDU4OTgwMzN9.oubsKPfUSCKiH_aXrfTOdLKD0llwDLdWiDIZujFM7C8" 
                 alt="Logo" 
                 className="w-full h-full object-contain scale-110"
                 referrerPolicy="no-referrer"
@@ -380,7 +392,7 @@ export default function App() {
           <div className="flex flex-col items-center gap-2">
             <h2 className="text-2xl font-black tracking-tighter italic text-white uppercase">Sincronizando Sistemas</h2>
             <div className="flex items-center gap-3">
-              <Loader2 className="animate-spin text-accent" size={20} />
+              <Loader2 className="animate-spin text-white" size={20} />
               <span className="text-xs uppercase tracking-[0.3em] font-black text-white/60">Acessando Banco de Dados</span>
             </div>
           </div>
@@ -416,7 +428,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-dark text-white font-sans selection:bg-accent/20 selection:text-accent">
+    <div className="min-h-screen bg-bg-dark text-white font-sans selection:bg-accent/20 selection:text-white">
       {/* Sidebar / Navigation */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -433,18 +445,18 @@ export default function App() {
       <nav className={`fixed left-0 top-0 h-full w-72 bg-sidebar text-white/60 p-6 flex flex-col z-50 shadow-[20px_0_50px_rgba(0,0,0,0.05)] border-r border-accent/10 overflow-y-auto backdrop-blur-xl transition-transform duration-300 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex justify-between items-center mb-10 lg:block">
           <div className="flex flex-col items-center text-center w-full">
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-accent to-emerald-600 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative w-16 h-16 bg-transparent rounded-2xl flex items-center justify-center mb-4 overflow-hidden">
+            <div className="relative group mb-6">
+              <div className="absolute -inset-2 bg-gradient-to-r from-accent to-emerald-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+              <div className="relative w-24 h-24 bg-sidebar/80 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-accent/20 overflow-hidden shadow-2xl group-hover:scale-105 transition-transform duration-500">
                 <img 
-                  src="https://ifudxfllenrtbhollajq.supabase.co/storage/v1/object/sign/planilha/Design%20sem%20nome%20(1).jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MzYxYzhmMC1mYjlhLTRlOGItOTFiYi0wZDVhNjdkMDE2YzEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwbGFuaWxoYS9EZXNpZ24gc2VtIG5vbWUgKDEpLmpwZyIsImlhdCI6MTc3MzE0MzQxMSwiZXhwIjoxODA0Njc5NDExfQ.j65TS5OS-eA3kMVjqGOfT7vh1c9n8rcmPBJbJpJqSzs" 
+                  src="https://ifudxfllenrtbhollajq.supabase.co/storage/v1/object/sign/planilha/Captura%20de%20tela%202026-03-24%20111819.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MzYxYzhmMC1mYjlhLTRlOGItOTFiYi0wZDVhNjdkMDE2YzEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwbGFuaWxoYS9DYXB0dXJhIGRlIHRlbGEgMjAyNi0wMy0yNCAxMTE4MTkucG5nIiwiaWF0IjoxNzc0MzYyMDMzLCJleHAiOjE4MDU4OTgwMzN9.oubsKPfUSCKiH_aXrfTOdLKD0llwDLdWiDIZujFM7C8" 
                   alt="Logo" 
-                  className="w-full h-full object-contain scale-110"
+                  className="w-full h-full object-contain p-2"
                   referrerPolicy="no-referrer"
                 />
               </div>
             </div>
-            <h1 className="text-lg font-black tracking-tighter text-white uppercase italic">Gestão de Pendências</h1>
+            <h1 className="text-xl font-black tracking-tighter text-white uppercase italic">Gestão de Pendências</h1>
             <div className="flex items-center gap-2 mt-1">
               <div className="h-[1px] w-4 bg-accent/30" />
               <p className="text-[9px] uppercase tracking-[0.3em] font-black text-white/60">TOMO BI</p>
@@ -500,7 +512,7 @@ export default function App() {
             <select 
               value={selectedUnit}
               onChange={(e) => setSelectedUnit(e.target.value)}
-              className="w-full bg-accent/5 border border-accent/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-accent text-accent/80 cursor-pointer appearance-none"
+              className="w-full bg-accent/5 border border-accent/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-accent text-white/80 cursor-pointer appearance-none"
             >
               {units.map(u => (
                 <option key={u} value={u} className="bg-sidebar">{u === 'All' ? 'Todas Unidades' : u}</option>
@@ -547,7 +559,7 @@ export default function App() {
             <select 
               value={selectedFarm}
               onChange={(e) => setSelectedFarm(e.target.value)}
-              className="w-full bg-accent/5 border border-accent/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-accent text-accent/80 cursor-pointer appearance-none"
+              className="w-full bg-accent/5 border border-accent/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-accent text-white/80 cursor-pointer appearance-none"
             >
               {farms.map(f => (
                 <option key={f} value={f} className="bg-sidebar">{f === 'All' ? 'Todas Fazendas' : f}</option>
@@ -560,7 +572,7 @@ export default function App() {
             <select 
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full bg-accent/5 border border-accent/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-accent text-accent/80 cursor-pointer appearance-none"
+              className="w-full bg-accent/5 border border-accent/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-accent text-white/80 cursor-pointer appearance-none"
             >
               {categories.map(c => (
                 <option key={c} value={c} className="bg-sidebar">{c === 'All' ? 'Todas Categorias' : c}</option>
@@ -573,7 +585,7 @@ export default function App() {
             <select 
               value={selectedSubcategory}
               onChange={(e) => setSelectedSubcategory(e.target.value)}
-              className="w-full bg-accent/5 border border-accent/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-accent text-accent/80 cursor-pointer appearance-none"
+              className="w-full bg-accent/5 border border-accent/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-accent text-white/80 cursor-pointer appearance-none"
             >
               {subcategories.map(s => (
                 <option key={s} value={s} className="bg-sidebar">{s === 'All' ? 'Todas Subcategorias' : s}</option>
@@ -586,7 +598,7 @@ export default function App() {
             <select 
               value={selectedDaysRemaining}
               onChange={(e) => setSelectedDaysRemaining(e.target.value)}
-              className="w-full bg-accent/5 border border-accent/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-accent text-accent/80 cursor-pointer appearance-none"
+              className="w-full bg-accent/5 border border-accent/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-accent text-white/80 cursor-pointer appearance-none"
             >
               <option value="All" className="bg-sidebar">Todos os Prazos</option>
               <option value="vencido" className="bg-sidebar">Vencidos (≤ 0)</option>
@@ -620,7 +632,7 @@ export default function App() {
         <div className="mt-auto pt-8 border-t border-accent/10">
           <div className="flex items-center gap-4 px-4 py-4 bg-accent/5 rounded-2xl border border-accent/5 group hover:border-accent/30 transition-all">
             <div className="w-10 h-10 rounded-xl bg-sidebar flex items-center justify-center border border-accent/10 group-hover:scale-110 transition-transform">
-              <User size={18} className="text-accent" />
+              <User size={18} className="text-white" />
             </div>
             <div className="flex flex-col overflow-hidden">
               <span className="text-[8px] uppercase font-black text-white/30 tracking-widest">Acesso Autorizado</span>
@@ -662,7 +674,7 @@ export default function App() {
           <div className="flex items-center gap-6">
             <button 
               onClick={loadData}
-              className="p-2 text-accent/40 hover:text-accent transition-colors"
+              className="p-2 text-white/40 hover:text-white transition-colors"
               title="Atualizar Dados"
             >
               <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
@@ -681,7 +693,7 @@ export default function App() {
                 className="space-y-8"
               >
                 {/* Indicators */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-sidebar/40 backdrop-blur-xl border border-accent/10 p-6 rounded-3xl shadow-2xl group hover:border-accent/30 transition-all duration-500">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-accent/10 text-accent rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -701,17 +713,6 @@ export default function App() {
                       <div>
                         <p className="text-[10px] uppercase tracking-widest font-black text-white/50">Total Planos</p>
                         <h4 className="text-3xl font-black text-white italic tracking-tighter">{dashboardStats.totalActionPlans}</h4>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-sidebar/40 backdrop-blur-xl border border-accent/10 p-6 rounded-3xl shadow-2xl group hover:border-accent/30 transition-all duration-500">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-accent/10 text-accent rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <MapPin size={24} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest font-black text-white/50">Talhões Afetados</p>
-                        <h4 className="text-3xl font-black text-white italic tracking-tighter">{dashboardStats.totalPlots}</h4>
                       </div>
                     </div>
                   </div>
@@ -770,8 +771,8 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  <div className="lg:col-span-2 bg-sidebar/40 backdrop-blur-xl border border-accent/10 p-8 rounded-3xl shadow-2xl">
+                <div className="grid grid-cols-1 gap-8">
+                  <div className="bg-sidebar/40 backdrop-blur-xl border border-accent/10 p-8 rounded-3xl shadow-2xl">
                     <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tighter italic">Principais Subcategorias</h3>
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
@@ -791,23 +792,6 @@ export default function App() {
                       </ResponsiveContainer>
                     </div>
                   </div>
-
-                  <div className="bg-sidebar/40 backdrop-blur-xl border border-accent/10 p-8 rounded-3xl shadow-2xl">
-                    <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tighter italic">Prioridade: Talhões Críticos</h3>
-                    <div className="space-y-4">
-                      {topPlots.map((plot, index) => (
-                        <div key={plot.name} className="flex items-center justify-between p-4 bg-accent/5 rounded-2xl border border-accent/10 hover:border-accent/30 transition-all group">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-accent/10 text-accent rounded-lg flex items-center justify-center text-xs font-black group-hover:scale-110 transition-transform">
-                              {index + 1}
-                            </div>
-                            <span className="text-sm font-black text-white uppercase tracking-tight">{plot.name}</span>
-                          </div>
-                          <span className="text-sm font-black text-white italic tracking-tighter">{plot.value} ocor.</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 {/* Detailed Table (Bottom) */}
@@ -816,7 +800,7 @@ export default function App() {
                     <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">Tabela Detalhada de Ocorrências</h3>
                     <button 
                       onClick={() => setActiveTab('occurrences')}
-                      className="text-[10px] font-black text-accent uppercase tracking-widest hover:underline"
+                      className="text-[10px] font-black text-white uppercase tracking-widest hover:underline"
                     >
                       Ver todas
                     </button>
@@ -837,7 +821,7 @@ export default function App() {
                       <tbody className="divide-y divide-accent/10">
                         {filteredOccurrences.slice(0, 10).map((occ) => (
                           <tr key={occ.id} className="hover:bg-accent/5 transition-colors group">
-                            <td className="p-5 font-mono text-xs font-black text-accent/40">{occ.number}</td>
+                            <td className="p-5 font-mono text-xs font-black text-white/40">{occ.number}</td>
                             <td className="p-5 text-sm text-white font-black">{occ.supervisor}</td>
                             <td className="p-5 flex flex-col items-start">
                               <div className="text-sm font-black text-white uppercase tracking-tight">{occ.farm}</div>
@@ -861,7 +845,7 @@ export default function App() {
                     {filteredOccurrences.slice(0, 5).map((occ) => (
                       <div key={occ.id} className="p-5 space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-mono font-black text-accent/40">Nº {occ.number}</span>
+                          <span className="text-[10px] font-mono font-black text-white/40">Nº {occ.number}</span>
                           <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">{occ.supervisor}</span>
                         </div>
                         <div>
@@ -969,7 +953,7 @@ export default function App() {
             >
               {filteredOccurrences.length === 0 ? (
                 <div className="p-20 text-center bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-3xl">
-                  <AlertCircle size={48} className="mx-auto text-accent/20 mb-4" />
+                  <AlertCircle size={48} className="mx-auto text-white/20 mb-4" />
                   <p className="text-white/40 font-black uppercase tracking-widest">Nenhuma ocorrência encontrada com os filtros atuais</p>
                   <button 
                     onClick={resetFilters}
@@ -985,64 +969,66 @@ export default function App() {
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="bg-accent/5 border-b border-accent/10 text-accent/40">
-                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Status</th>
+                          <tr className="bg-accent/5 border-b border-accent/10 text-white/60">
                             <th className="p-5 text-[10px] uppercase tracking-widest font-black">Nº Ocorrência</th>
                             <th className="p-5 text-[10px] uppercase tracking-widest font-black">Unidade</th>
                             <th className="p-5 text-[10px] uppercase tracking-widest font-black">Supervisor</th>
                             <th className="p-5 text-[10px] uppercase tracking-widest font-black">Fazenda / Talhão</th>
                             <th className="p-5 text-[10px] uppercase tracking-widest font-black">Categoria</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Observação</th>
                             <th className="p-5 text-[10px] uppercase tracking-widest font-black">Data Criação</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Status Plano de Ação</th>
                             <th className="p-5 text-[10px] uppercase tracking-widest font-black text-right">Ações</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-accent/10">
                           {filteredOccurrences.map((occ) => (
                             <tr key={occ.id} className="hover:bg-accent/5 transition-colors group cursor-pointer">
+                              <td className="p-5 font-mono text-sm font-black text-white/40">{occ.number}</td>
                               <td className="p-5">
-                                {occ.isCompleted ? (
-                                  <div className="flex items-center gap-2 text-emerald-600 bg-emerald-600/10 w-fit px-3 py-1 rounded-full border border-emerald-600/20">
-                                    <CheckCircle2 size={12} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Concluído</span>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2 text-amber-600 bg-amber-600/10 w-fit px-3 py-1 rounded-full border border-amber-600/20">
-                                    <Clock size={12} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Pendente</span>
-                                  </div>
-                                )}
+                                <span className="text-[10px] px-2 py-1 bg-accent/5 text-white/80 rounded-md font-black border border-accent/10 uppercase tracking-widest whitespace-nowrap">{occ.unit}</span>
                               </td>
-                              <td className="p-5 font-mono text-sm font-black text-accent/40">{occ.number}</td>
+                              <td className="p-5 text-sm text-white font-black">{occ.supervisor}</td>
                               <td className="p-5">
-                                <span className="text-[10px] px-2 py-1 bg-accent/5 text-accent/60 rounded-md font-black border border-accent/10 uppercase tracking-widest whitespace-nowrap">{occ.unit}</span>
-                              </td>
-                              <td className="p-5 text-sm text-accent font-black">{occ.supervisor}</td>
-                              <td className="p-5">
-                                <div className="text-sm font-black text-accent uppercase tracking-tight">{occ.farm}</div>
-                                <div className="text-[10px] text-accent/60 uppercase font-black tracking-widest mt-1">Talhão: {occ.plot}</div>
-                                {occ.sector && <div className="text-[10px] text-accent/60 uppercase font-black tracking-widest mt-1">Setor: {occ.sector}</div>}
+                                <div className="text-sm font-black text-white uppercase tracking-tight">{occ.farm}</div>
+                                <div className="text-[10px] text-white/60 uppercase font-black tracking-widest mt-1">Talhão: {occ.plot}</div>
+                                {occ.sector && <div className="text-[10px] text-white/60 uppercase font-black tracking-widest mt-1">Setor: {occ.sector}</div>}
                               </td>
                               <td className="p-5">
                                 <div 
-                                  className="text-sm font-black text-accent cursor-pointer hover:text-emerald-600 uppercase tracking-tight transition-colors"
+                                  className="text-sm font-black text-white cursor-pointer hover:text-emerald-600 uppercase tracking-tight transition-colors"
                                   onClick={() => setSelectedOccurrence(occ)}
                                 >
                                   {occ.category}
                                 </div>
                                 <div 
-                                  className="text-[10px] text-accent/60 italic mt-1 cursor-pointer hover:text-emerald-600 transition-colors"
+                                  className="text-[10px] text-white/60 italic mt-1 cursor-pointer hover:text-emerald-600 transition-colors"
                                   onClick={() => setSelectedOccurrence(occ)}
                                 >
                                   {occ.subcategory}
                                 </div>
                               </td>
-                              <td className="p-5 text-xs text-accent/60 font-mono font-black">
-                                {new Date(occ.createdAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                              <td className="p-5">
+                                <div className="text-xs text-white/60 line-clamp-2 max-w-[200px]">{occ.observation || '-'}</div>
+                              </td>
+                              <td className="p-5 text-xs text-white/60 font-mono font-black">
+                                {formatDateSafe(occ.createdAt)}
+                              </td>
+                              <td className="p-5">
+                                <span className={`text-[10px] px-2 py-1 rounded-md font-black border uppercase tracking-widest whitespace-nowrap ${
+                                  occ.actionPlanStatus?.toLowerCase().includes('concluído') || occ.actionPlanStatus?.toLowerCase().includes('concluido')
+                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                    : occ.actionPlanStatus?.toLowerCase().includes('andamento')
+                                      ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                      : 'bg-white/5 text-white/40 border-white/10'
+                                }`}>
+                                  {occ.actionPlanStatus || '-'}
+                                </span>
                               </td>
                               <td className="p-5 text-right">
                                 <button 
                                   onClick={() => setSelectedOccurrence(occ)}
-                                  className="p-2 hover:bg-accent/10 rounded-xl text-accent/40 hover:text-accent transition-all hover:scale-110"
+                                  className="p-2 hover:bg-accent/10 rounded-xl text-white/40 hover:text-white transition-all hover:scale-110"
                                 >
                                   <Eye size={18} />
                                 </button>
@@ -1064,20 +1050,18 @@ export default function App() {
                       >
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-mono font-black text-accent/40 uppercase tracking-widest">Nº {occ.number}</span>
+                            <span className="text-[10px] font-mono font-black text-white/40 uppercase tracking-widest">Nº {occ.number}</span>
                             <h4 className="text-sm font-black text-white uppercase tracking-tight">{occ.category}</h4>
                           </div>
-                          {occ.isCompleted ? (
-                            <div className="flex items-center gap-1 text-emerald-600 bg-emerald-600/10 px-2 py-1 rounded-full border border-emerald-600/20">
-                              <CheckCircle2 size={10} />
-                              <span className="text-[8px] font-black uppercase tracking-widest">Concluído</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-amber-600 bg-amber-600/10 px-2 py-1 rounded-full border border-amber-600/20">
-                              <Clock size={10} />
-                              <span className="text-[8px] font-black uppercase tracking-widest">Pendente</span>
-                            </div>
-                          )}
+                          <span className={`text-[8px] px-2 py-1 rounded-md font-black border uppercase tracking-widest whitespace-nowrap ${
+                            occ.actionPlanStatus?.toLowerCase().includes('concluído') || occ.actionPlanStatus?.toLowerCase().includes('concluido')
+                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                              : occ.actionPlanStatus?.toLowerCase().includes('andamento')
+                                ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                : 'bg-white/5 text-white/40 border-white/10'
+                          }`}>
+                            {occ.actionPlanStatus || '-'}
+                          </span>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -1094,7 +1078,7 @@ export default function App() {
                         <div className="flex items-center justify-between pt-4 border-t border-accent/5">
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-lg bg-accent/10 flex items-center justify-center">
-                              <User size={12} className="text-accent" />
+                              <User size={12} className="text-white" />
                             </div>
                             <span className="text-[9px] font-black text-white/60 uppercase tracking-tight">{occ.supervisor}</span>
                           </div>
@@ -1120,7 +1104,7 @@ export default function App() {
             >
               {filteredActionPlans.length === 0 ? (
                 <div className="p-20 text-center bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-3xl">
-                  <ClipboardList size={48} className="mx-auto text-accent/20 mb-4" />
+                  <ClipboardList size={48} className="mx-auto text-white/20 mb-4" />
                   <p className="text-white/40 font-black uppercase tracking-widest">Nenhum plano de ação encontrado com os filtros atuais</p>
                   <button 
                     onClick={resetFilters}
@@ -1141,7 +1125,7 @@ export default function App() {
                         <div className="flex-grow">
                           <div className="flex flex-wrap items-center gap-3 mb-4 lg:mb-6">
                             <span 
-                              className="text-[10px] font-mono bg-accent/10 text-accent/60 px-3 py-1 rounded-md border border-accent/10 cursor-pointer hover:bg-accent hover:text-white transition-colors uppercase tracking-widest font-black"
+                              className="text-[10px] font-mono bg-accent/10 text-white/60 px-3 py-1 rounded-md border border-accent/10 cursor-pointer hover:bg-accent hover:text-white transition-colors uppercase tracking-widest font-black"
                               onClick={() => occ && setSelectedOccurrence(occ)}
                             >
                               {ap.occurrenceId}
@@ -1163,9 +1147,15 @@ export default function App() {
                             )}
                           </div>
                           
-                          <h4 className="text-xl lg:text-2xl font-black mb-4 text-white uppercase tracking-tighter italic">{ap.description}</h4>
+                          <h4 className="text-xl lg:text-2xl font-black mb-2 text-white uppercase tracking-tighter italic">{ap.description}</h4>
                           
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                          {occ?.observation && (
+                            <p className="text-xs text-white/40 italic mb-4 line-clamp-2">
+                              Obs: {occ.observation}
+                            </p>
+                          )}
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
                             <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
                               <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Fazenda</span>
                               <span className="text-xs font-black text-white uppercase tracking-tight">{ap.farm || '-'}</span>
@@ -1175,16 +1165,20 @@ export default function App() {
                               <span className="text-xs font-black text-white uppercase tracking-tight">{ap.plot || '-'}</span>
                             </div>
                             <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
-                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Data Criação</span>
-                              <span className="text-xs font-black text-white uppercase tracking-tight">{ap.createdAt ? new Date(ap.createdAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'}</span>
+                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Criação</span>
+                              <span className="text-xs font-black text-white uppercase tracking-tight">{formatDateSafe(ap.createdAt)}</span>
+                            </div>
+                            <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
+                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Início</span>
+                              <span className="text-xs font-black text-white uppercase tracking-tight">{formatDateSafe(ap.startDate)}</span>
+                            </div>
+                            <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
+                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Prazo Final</span>
+                              <span className="text-xs font-black text-white uppercase tracking-tight">{formatDateSafe(ap.endDate)}</span>
                             </div>
                             <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
                               <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">ID Ocorrência</span>
                               <span className="text-xs font-black text-white uppercase tracking-tight">{ap.occurrenceId}</span>
-                            </div>
-                            <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
-                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Excluída</span>
-                              <span className="text-xs font-black text-white uppercase tracking-tight">{ap.rawData?.['EXCLUÍDA'] || ap.rawData?.['Excluída'] || ap.rawData?.['excluida'] || 'ATIVA'}</span>
                             </div>
                           </div>
 
@@ -1211,6 +1205,9 @@ export default function App() {
                                     lowerKey === 'criador'
                                 ) return null;
                                 
+                                const isDate = lowerKey.includes('data') || lowerKey.includes('início') || lowerKey.includes('inicio') || lowerKey.includes('fim') || lowerKey.includes('prazo') || lowerKey.includes('vencimento');
+                                const displayValue = isDate ? formatDateSafe(String(value)) : String(value);
+                                
                                 return (
                                   <div key={key} className={`flex flex-col p-2 rounded-lg transition-all ${
                                     lowerKey === 'dias_restantes' ? 'bg-orange-500/20 border border-orange-500/30' : 
@@ -1218,12 +1215,12 @@ export default function App() {
                                   }`}>
                                     <span className={`text-[10px] uppercase font-black tracking-widest truncate ${
                                       lowerKey === 'dias_restantes' ? 'text-orange-400' : 
-                                      (lowerKey.includes('início') || lowerKey.includes('inicio') || lowerKey.includes('fim') || lowerKey.includes('prazo')) ? 'text-accent' : 'text-white/40'
+                                      (lowerKey.includes('início') || lowerKey.includes('inicio') || lowerKey.includes('fim') || lowerKey.includes('prazo')) ? 'text-white' : 'text-white/40'
                                     }`} title={key}>{key}</span>
                                     <span className={`text-xs font-black uppercase tracking-tight ${
                                       lowerKey === 'dias_restantes' ? 'text-orange-500 text-lg' : 
                                       (lowerKey.includes('início') || lowerKey.includes('inicio') || lowerKey.includes('fim') || lowerKey.includes('prazo')) ? 'text-white' : 'text-white'
-                                    }`}>{String(value)}</span>
+                                    }`}>{displayValue}</span>
                                   </div>
                                 );
                               })}
@@ -1232,7 +1229,7 @@ export default function App() {
                           
                           <div className="flex flex-wrap gap-8 mt-8 pt-8 border-t border-accent/10">
                             <div className="flex items-center gap-2 text-[10px] text-white/60 uppercase tracking-widest">
-                              <User size={14} className="text-accent" />
+                              <User size={14} className="text-white" />
                               <span className="font-black">Resp: <span className="text-white">{ap.supervisor}</span></span>
                             </div>
                           </div>
@@ -1255,66 +1252,86 @@ export default function App() {
             >
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-accent to-transparent opacity-50"></div>
               
-              <h2 className="text-2xl font-black text-accent uppercase tracking-tighter italic mb-8 flex items-center gap-3">
+              <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic mb-8 flex items-center gap-3">
                 <div className="w-2 h-8 bg-accent rounded-full"></div>
-                Detalhes da Ocorrência {selectedOccurrence.number}
+                Detalhes da Ocorrência
               </h2>
               
-              <div className="space-y-6 text-accent/60">
+              <div className="space-y-8 text-white/60">
+                {/* Top Section: ID and Status */}
+                <div className="grid grid-cols-2 gap-6 pb-6 border-b border-accent/10">
+                  <div>
+                    <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">ID Ocorrência</span>
+                    <span className="text-xl font-black text-white uppercase tracking-tighter italic">{selectedOccurrence.number}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Excluída / Ativa</span>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${selectedOccurrence.isCompleted ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`}></div>
+                      <span className={`text-sm font-black uppercase tracking-tight ${selectedOccurrence.isCompleted ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {selectedOccurrence.isCompleted ? 'Concluída' : 'Ativa'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Middle Section: Main Info */}
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Unidade</span>
-                    <span className="text-sm font-black text-accent uppercase tracking-tight">{selectedOccurrence.unit}</span>
+                    <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Unidade</span>
+                    <span className="text-sm font-black text-white uppercase tracking-tight">{selectedOccurrence.unit}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Fazenda</span>
-                    <span className="text-sm font-black text-accent uppercase tracking-tight">{selectedOccurrence.farm}</span>
+                    <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Fazenda</span>
+                    <span className="text-sm font-black text-white uppercase tracking-tight">{selectedOccurrence.farm}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Talhão</span>
-                    <span className="text-sm font-black text-accent uppercase tracking-tight">{selectedOccurrence.plot}</span>
+                    <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Talhão</span>
+                    <span className="text-sm font-black text-white uppercase tracking-tight">{selectedOccurrence.plot}</span>
                   </div>
                   {selectedOccurrence.sector && (
                     <div>
-                      <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Setor</span>
-                      <span className="text-sm font-black text-accent uppercase tracking-tight">{selectedOccurrence.sector}</span>
+                      <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Setor</span>
+                      <span className="text-sm font-black text-white uppercase tracking-tight">{selectedOccurrence.sector}</span>
                     </div>
                   )}
                   <div>
-                    <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Criador</span>
-                    <span className="text-sm font-black text-accent uppercase tracking-tight">{selectedOccurrence.creator}</span>
+                    <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Criador</span>
+                    <span className="text-sm font-black text-white uppercase tracking-tight">{selectedOccurrence.creator}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Responsável</span>
-                    <span className="text-sm font-black text-accent uppercase tracking-tight">{selectedOccurrence.supervisor}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Data Criação</span>
-                    <span className="text-sm font-black text-accent uppercase tracking-tight">{selectedOccurrence.createdAt ? new Date(selectedOccurrence.createdAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'}</span>
-                  </div>
-                  {selectedOccurrence.completedAt && (
-                    <div>
-                      <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Data Conclusão</span>
-                      <span className="text-sm font-black text-accent uppercase tracking-tight">{new Date(selectedOccurrence.completedAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Status</span>
-                    <span className={`text-sm font-black uppercase tracking-tight ${selectedOccurrence.isCompleted ? 'text-emerald-600' : 'text-amber-600'}`}>
-                      {selectedOccurrence.isCompleted ? 'Concluído' : 'Pendente'}
+                    <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Status Plano de Ação</span>
+                    <span className={`text-[10px] px-2 py-1 rounded-md font-black border uppercase tracking-widest whitespace-nowrap inline-block ${
+                      selectedOccurrence.actionPlanStatus?.toLowerCase().includes('concluído') || selectedOccurrence.actionPlanStatus?.toLowerCase().includes('concluido')
+                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                        : selectedOccurrence.actionPlanStatus?.toLowerCase().includes('andamento')
+                          ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                          : 'bg-white/5 text-white/40 border-white/10'
+                    }`}>
+                      {selectedOccurrence.actionPlanStatus || '-'}
                     </span>
                   </div>
-                  {selectedOccurrence.isDeleted && (
-                    <div>
-                      <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-1">Excluída</span>
-                      <span className="text-sm font-black text-red-600 uppercase tracking-tight">Sim</span>
-                    </div>
-                  )}
+                </div>
+
+                {/* Bottom Section: Three Key Fields */}
+                <div className="grid grid-cols-3 gap-4 pt-6 border-t border-accent/10">
+                  <div>
+                    <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Responsável</span>
+                    <span className="text-xs font-black text-white uppercase tracking-tight">{selectedOccurrence.supervisor}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Criação</span>
+                    <span className="text-xs font-black text-white uppercase tracking-tight">{formatDateSafe(selectedOccurrence.createdAt)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Conclusão</span>
+                    <span className="text-xs font-black text-white uppercase tracking-tight">{formatDateSafe(selectedOccurrence.completedAt)}</span>
+                  </div>
                 </div>
 
                 <div className="p-6 bg-accent/5 rounded-2xl border border-accent/10">
-                  <span className="text-[10px] uppercase font-black text-accent/40 tracking-widest block mb-3">Observação</span>
-                  <p className="text-sm text-accent/80 italic leading-relaxed">{selectedOccurrence.observation || 'Sem observações.'}</p>
+                  <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-3">Observação</span>
+                  <p className="text-sm text-white/80 italic leading-relaxed">{selectedOccurrence.observation || 'Sem observações.'}</p>
                 </div>
               </div>
 

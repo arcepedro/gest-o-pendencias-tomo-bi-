@@ -1,8 +1,8 @@
 import { read, utils } from 'xlsx';
 import { Occurrence, ActionPlan, Unit } from '../types';
 
-const OCCURRENCES_URL = 'https://ifudxfllenrtbhollajq.supabase.co/storage/v1/object/sign/planilha/OCORRENCIA_TOMO%20BI.xlsx?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MzYxYzhmMC1mYjlhLTRlOGItOTFiYi0wZDVhNjdkMDE2YzEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwbGFuaWxoYS9PQ09SUkVOQ0lBX1RPTU8gQkkueGxzeCIsImlhdCI6MTc3MzY1NzYyMiwiZXhwIjoxODA1MTkzNjIyfQ.3FpFUYdW1DVAu8CqAQefXi_61Huh1jvyQHuOp-Kerho';
-const ACTION_PLANS_URL = 'https://ifudxfllenrtbhollajq.supabase.co/storage/v1/object/sign/planilha/planotomobi.xlsx?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MzYxYzhmMC1mYjlhLTRlOGItOTFiYi0wZDVhNjdkMDE2YzEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwbGFuaWxoYS9wbGFub3RvbW9iaS54bHN4IiwiaWF0IjoxNzczNjU5MTcxLCJleHAiOjE4MDUxOTUxNzF9.AldImi-GT_kbarVm_2V3BBkg07zUv9dZ3FCV-FWnzAc';
+const OCCURRENCES_URL = 'https://ifudxfllenrtbhollajq.supabase.co/storage/v1/object/sign/planilha/OCORRENCIA_TOMO%20BI.xlsx?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MzYxYzhmMC1mYjlhLTRlOGItOTFiYi0wZDVhNjdkMDE2YzEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwbGFuaWxoYS9PQ09SUkVOQ0lBX1RPTU8gQkkueGxzeCIsImlhdCI6MTc3NDM2NTk3MywiZXhwIjoxODA1OTAxOTczfQ.wrkfiCrS5JqaS3s2BUbgBM2WQAJ9DdPSvhSGUy8M3VM';
+const ACTION_PLANS_URL = 'https://ifudxfllenrtbhollajq.supabase.co/storage/v1/object/sign/planilha/planotomobi.xlsx?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MzYxYzhmMC1mYjlhLTRlOGItOTFiYi0wZDVhNjdkMDE2YzEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwbGFuaWxoYS9wbGFub3RvbW9iaS54bHN4IiwiaWF0IjoxNzc0Mzc0MjA1LCJleHAiOjE4MDU5MTAyMDV9.qzTBVK9GTa4nNio702u6evEQRWs7NMdtL7At6q1lJlo';
 
 // Helper to parse Excel dates
 const parseExcelDate = (value: any): string => {
@@ -82,7 +82,7 @@ const normalizeUnit = (val: any): Unit => {
 // Helper to fetch and parse a single spreadsheet
 const fetchWorkbook = async (url: string) => {
   if (!url) return null;
-  const response = await fetch(url);
+  const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) throw new Error(`Failed to fetch spreadsheet from ${url}`);
   const arrayBuffer = await response.arrayBuffer();
   return read(arrayBuffer, { type: 'array', cellDates: true });
@@ -124,57 +124,70 @@ export const fetchSpreadsheetData = async (): Promise<{ occurrences: Occurrence[
 
     let occurrences: Occurrence[] = [];
     if (occWorkbook) {
-      const sheetName = occWorkbook.SheetNames[0];
-      const sheet = occWorkbook.Sheets[sheetName];
-      const headerRow = findHeaderRow(sheet, ['número', 'numero', 'ocorrência', 'ocorrencia', 'fazenda', 'categoria']);
-      const data = utils.sheet_to_json<any>(sheet, { range: headerRow });
-      
-      occurrences = data.map((row, index) => {
-        const keys = Object.keys(row);
-        const numberKey = keys.find(k => k.toLowerCase().includes('número') || k.toLowerCase().includes('numero') || k.toLowerCase() === 'nº' || k.toLowerCase() === 'id');
-        const unitKey = keys.find(k => k.toLowerCase().includes('usina') || k.toLowerCase().includes('unidade'));
-        const creatorKey = keys.find(k => k.toLowerCase().includes('criado'));
-        const supervisorKey = keys.find(k => k.toLowerCase().includes('responsável') || k.toLowerCase().includes('responsavel'));
-        const farmKey = keys.find(k => k.toLowerCase().includes('fazenda'));
-        const plotKey = keys.find(k => k.toLowerCase().includes('talhão') || k.toLowerCase().includes('talhao'));
-        const sectorKey = keys.find(k => k.toLowerCase().includes('setor'));
-        const categoryKey = keys.find(k => k.toLowerCase().trim() === 'categoria');
-        const subcategoryKey = keys.find(k => k.toLowerCase().includes('subcategoria'));
-        const observationKey = keys.find(k => k.toLowerCase().includes('observação') || k.toLowerCase().includes('observacao') || k.toLowerCase().includes('descrição') || k.toLowerCase().includes('descricao'));
-        const isCompletedKey = keys.find(k => k.toLowerCase().includes('concluída') || k.toLowerCase().includes('concluido') || k.toLowerCase() === 'status');
-        const createdAtKey = keys.find(k => {
-          const low = k.toLowerCase();
-          return (low.includes('data') && low.includes('cria')) || low === 'data';
-        });
-        const completedAtKey = keys.find(k => {
-          const low = k.toLowerCase();
-          return (low.includes('concl') && !low.includes('concluída') && !low.includes('concluido')) || low.includes('data conclusão');
-        });
-        const isDeletedKey = keys.find(k => k.toLowerCase().includes('excluída') || k.toLowerCase().includes('excluida'));
+      occWorkbook.SheetNames.forEach(sheetName => {
+        const sheet = occWorkbook.Sheets[sheetName];
+        const headerRow = findHeaderRow(sheet, ['número', 'numero', 'ocorrência', 'ocorrencia', 'fazenda', 'categoria', 'id']);
+        const data = utils.sheet_to_json<any>(sheet, { range: headerRow });
+        
+        const sheetOccurrences = data.map((row, index) => {
+          const keys = Object.keys(row);
+          
+          const unitKey = keys.find(k => k.toUpperCase() === 'UNIDADE');
+          const numberKey = keys.find(k => k.toUpperCase() === 'ID' || k.toLowerCase() === 'id ocorrência' || k.toLowerCase() === 'id ocorrencia');
+          const farmKey = keys.find(k => k.toUpperCase() === 'FAZENDA');
+          const plotKey = keys.find(k => k.toUpperCase() === 'TALHÃO' || k.toUpperCase() === 'TALHAO');
+          const createdAtKey = keys.find(k => k.toUpperCase() === 'DATA CRIAÇÃO' || k.toUpperCase() === 'DATA CRIACAO');
+          const statusKey = keys.find(k => k.toUpperCase() === 'STATUS');
+          const categoryKey = keys.find(k => k.toUpperCase() === 'CATEGORIA');
+          const subcategoryKey = keys.find(k => k.toUpperCase() === 'SUBCATEGORIA');
+          const observationKey = keys.find(k => k.toUpperCase() === 'OBSERVAÇÃO' || k.toUpperCase() === 'OBSERVACAO' || k.toLowerCase().includes('descrição') || k.toLowerCase().includes('descricao'));
+          const creatorKey = keys.find(k => k.toUpperCase() === 'CRIADO POR');
+          const supervisorKey = keys.find(k => k.toUpperCase() === 'RESPONSÁVEL' || k.toUpperCase() === 'RESPONSAVEL');
+          const actionPlanStatusKey = keys.find(k => k.toUpperCase() === 'STATUS PLANO DE AÇÃO' || k.toUpperCase() === 'STATUS PLANO DE ACAO');
 
-        // Skip empty rows or rows without a valid ID/Number
-        const idValue = numberKey ? row[numberKey] : null;
-        if (idValue === null || idValue === undefined || String(idValue).trim() === '') return null;
+          const sectorKey = keys.find(k => k.toLowerCase().includes('setor'));
+          const completedAtKey = keys.find(k => {
+            const low = k.toLowerCase();
+            return (low.includes('concl') && !low.includes('concluída') && !low.includes('concluido')) || low.includes('data conclusão');
+          });
+          const isDeletedKey = keys.find(k => k.toLowerCase().trim() === 'excluída' || k.toLowerCase().trim() === 'excluida');
 
-        return {
-          id: String(index),
-          number: normalizeId(idValue),
-          unit: String(unitKey ? row[unitKey] : '').trim(),
-          creator: String(creatorKey ? row[creatorKey] : 'Unknown').trim(),
-          supervisor: String(supervisorKey ? row[supervisorKey] : 'Unassigned').trim(),
-          farm: String(farmKey ? row[farmKey] : '').trim(),
-          plot: normalizeId(plotKey ? row[plotKey] : ''),
-          sector: String(sectorKey ? row[sectorKey] : '').trim(),
-          category: String(categoryKey ? row[categoryKey] : '').trim(),
-          subcategory: String(subcategoryKey ? row[subcategoryKey] : '').trim(),
-          observation: String(observationKey ? row[observationKey] : '').trim(),
-          isCompleted: isCompletedKey ? parseBoolean(row[isCompletedKey]) : false,
-          createdAt: createdAtKey && row[createdAtKey] ? parseExcelDate(row[createdAtKey]) : '',
-          completedAt: completedAtKey && row[completedAtKey] ? parseExcelDate(row[completedAtKey]) : '',
-          isDeleted: isDeletedKey ? parseBoolean(row[isDeletedKey]) : false,
-          rawData: row,
-        } as Occurrence;
-      }).filter((o): o is Occurrence => o !== null);
+          // Skip rows that are completely empty
+          const hasData = Object.values(row).some(v => v !== null && v !== undefined && String(v).trim() !== '');
+          if (!hasData) return null;
+
+          const idValue = numberKey ? row[numberKey] : null;
+          const number = idValue !== null && idValue !== undefined && String(idValue).trim() !== '' 
+            ? normalizeId(idValue) 
+            : `ID-${sheetName}-${index + 1}`;
+
+          // Determine if completed based on Status column
+          const statusValue = statusKey ? String(row[statusKey]).toLowerCase() : '';
+          const isCompleted = statusValue.includes('concluído') || statusValue.includes('concluido') || statusValue.includes('fechado');
+
+          return {
+            id: `${sheetName}-${index}`,
+            number,
+            unit: String(unitKey ? row[unitKey] : '').trim(),
+            creator: String(creatorKey ? row[creatorKey] : 'Unknown').trim(),
+            supervisor: String(supervisorKey ? row[supervisorKey] : 'Unassigned').trim(),
+            farm: String(farmKey ? row[farmKey] : '').trim(),
+            plot: normalizeId(plotKey ? row[plotKey] : ''),
+            sector: String(sectorKey ? row[sectorKey] : '').trim(),
+            category: String(categoryKey ? row[categoryKey] : '').trim(),
+            subcategory: String(subcategoryKey ? row[subcategoryKey] : '').trim(),
+            observation: String(observationKey ? row[observationKey] : '').trim(),
+            isCompleted: isCompleted,
+            createdAt: createdAtKey && row[createdAtKey] ? parseExcelDate(row[createdAtKey]) : '',
+            completedAt: completedAtKey && row[completedAtKey] ? parseExcelDate(row[completedAtKey]) : '',
+            isDeleted: isDeletedKey ? parseBoolean(row[isDeletedKey]) : false,
+            actionPlanStatus: actionPlanStatusKey ? String(row[actionPlanStatusKey] || '').trim() : '',
+            rawData: row,
+          } as Occurrence;
+        }).filter((o): o is Occurrence => o !== null);
+        
+        occurrences = [...occurrences, ...sheetOccurrences];
+      });
     }
 
     let actionPlans: ActionPlan[] = [];

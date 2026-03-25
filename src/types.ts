@@ -22,6 +22,7 @@ export interface Occurrence {
   createdAt: string;
   completedAt: string;
   isDeleted: boolean;
+  actionPlanStatus?: string;
   rawData?: Record<string, any>;
 }
 
