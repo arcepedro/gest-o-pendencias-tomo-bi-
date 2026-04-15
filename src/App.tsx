@@ -40,7 +40,7 @@ import { fetchSpreadsheetData } from './services/excelService';
 const CURRENT_DATE = new Date();
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'occurrences' | 'actionPlans' | 'dashboard'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'occurrences' | 'actionPlans' | 'dashboard' | 'completed'>('dashboard');
   const [selectedSupervisors, setSelectedSupervisors] = useState<string[]>([]);
   const [selectedSupervisorDetail, setSelectedSupervisorDetail] = useState<string | null>(null);
   const [selectedOccurrence, setSelectedOccurrence] = useState<Occurrence | null>(null);
@@ -54,6 +54,7 @@ export default function App() {
   const [selectedDaysRemaining, setSelectedDaysRemaining] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [actionPlans, setActionPlans] = useState<ActionPlan[]>([]);
@@ -76,6 +77,8 @@ export default function App() {
 
   useEffect(() => {
     loadData();
+    const timer = setTimeout(() => setShowSplash(false), 5000);
+    return () => clearTimeout(timer);
   }, []);
 
   const supervisors = useMemo(() => {
@@ -312,17 +315,30 @@ export default function App() {
   const COLORS = ['#00f2ff', '#bc13fe', '#ff00ff', '#ff4500', '#ff8c00', '#007fff', '#ff1493', '#9400d3', '#ff0000', '#ffff00'];
 
   const dashboardStats = useMemo(() => {
-    const totalOccurrences = filteredOccurrences.length;
+    const pendingOccurrences = filteredOccurrences.filter(o => !o.isCompleted).length;
+    const totalOccurrences = pendingOccurrences;
+    const completedOccurrences = filteredOccurrences.filter(o => o.isCompleted).length;
     const totalSupervisors = new Set(filteredOccurrences.map(o => o.supervisor)).size;
     const totalPlots = new Set(filteredOccurrences.map(o => o.plot)).size;
-    const totalActionPlans = filteredActionPlans.length;
+    const pendingActionPlans = filteredActionPlans.filter(ap => !ap.isCompleted).length;
+    const totalActionPlans = pendingActionPlans;
+    const completedActionPlans = filteredActionPlans.filter(ap => ap.isCompleted).length;
     
-    return { totalOccurrences, totalSupervisors, totalPlots, totalActionPlans };
+    return { 
+      totalOccurrences, 
+      pendingOccurrences, 
+      completedOccurrences, 
+      totalSupervisors, 
+      totalPlots, 
+      totalActionPlans,
+      pendingActionPlans,
+      completedActionPlans
+    };
   }, [filteredOccurrences, filteredActionPlans]);
 
   const occurrencesBySupervisor = useMemo(() => {
     const counts: Record<string, number> = {};
-    filteredOccurrences.forEach(o => {
+    filteredOccurrences.filter(o => !o.isCompleted).forEach(o => {
       counts[o.supervisor] = (counts[o.supervisor] || 0) + 1;
     });
     return Object.entries(counts)
@@ -362,6 +378,67 @@ export default function App() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
   }, [filteredOccurrences]);
+
+  if (showSplash) {
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black overflow-hidden">
+        {/* Glows */}
+        <motion.div 
+          animate={{ scale: [0.8, 1.2, 0.8] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute w-[400px] h-[400px] bg-[#76b82a] rounded-full blur-[100px] opacity-40" 
+        />
+
+        {/* Texture */}
+        <div 
+          className="absolute inset-0 opacity-20 pointer-events-none"
+          style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }}
+        />
+
+        <div className="relative z-10 flex flex-col items-center">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="relative flex items-center justify-center rounded-[25%] overflow-hidden shadow-[0_0_50px_rgba(118,184,42,0.2)] bg-[#1a1a1a] w-48 h-48 mb-12 border border-white/5"
+          >
+            <img 
+              src="https://ifudxfllenrtbhollajq.supabase.co/storage/v1/object/sign/CONTROLE%20DE%20ABASTECIMENTO%20COCAL%20LOTS/logo%20cocal%20sem%20texto.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MzYxYzhmMC1mYjlhLTRlOGItOTFiYi0wZDVhNjdkMDE2YzEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJDT05UUk9MRSBERSBBQkFTVEVDSU1FTlRPIENPQ0FMIExPVFMvbG9nbyBjb2NhbCBzZW0gdGV4dG8ucG5nIiwiaWF0IjoxNzc2MjU4MzQ1LCJleHAiOjE4MDc3OTQzNDV9.0Ps4DZ7NlfnnEyoVcygmv_Jet_nifWZC6V-d-BJhLAk" 
+              alt="Logo" 
+              className="w-32 h-32 object-contain"
+              referrerPolicy="no-referrer"
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
+            className="flex flex-col items-center text-center"
+          >
+            <h1 className="text-3xl font-black tracking-tighter text-white uppercase italic">Gestão de Pendências</h1>
+            <p className="text-[10px] uppercase tracking-widest font-black text-[#76b82a] mt-2">TOMO BI</p>
+          </motion.div>
+
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 1.5, delay: 1, ease: "easeInOut" }}
+            className="w-48 h-[3px] bg-gradient-to-r from-transparent via-[#76b82a] to-transparent mt-8 mb-8"
+          />
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 1.5 }}
+            className="text-[10px] uppercase tracking-[0.3em] font-black text-white/40"
+          >
+            INICIANDO SISTEMA...
+          </motion.p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -428,8 +505,8 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-dark text-white font-sans selection:bg-accent/20 selection:text-white">
-      {/* Sidebar / Navigation */}
+    <div className="min-h-screen bg-black text-white font-sans selection:bg-[#76b82a]/20 selection:text-white">
+      {/* Sidebar / Navigation (Mobile Slide-over) */}
       <AnimatePresence>
         {isSidebarOpen && (
           <motion.div 
@@ -437,35 +514,35 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsSidebarOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60]"
           />
         )}
       </AnimatePresence>
 
-      <nav className={`fixed left-0 top-0 h-full w-72 bg-sidebar text-white/60 p-6 flex flex-col z-50 shadow-[20px_0_50px_rgba(0,0,0,0.05)] border-r border-accent/10 overflow-y-auto backdrop-blur-xl transition-transform duration-300 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex justify-between items-center mb-10 lg:block">
+      <nav className={`fixed left-0 top-0 h-full w-72 bg-black/90 text-white/60 p-6 flex flex-col z-[70] shadow-[20px_0_50px_rgba(0,0,0,0.5)] border-r border-white/10 overflow-y-auto backdrop-blur-xl transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex justify-between items-center mb-10">
           <div className="flex flex-col items-center text-center w-full">
             <div className="relative group mb-6">
-              <div className="absolute -inset-2 bg-gradient-to-r from-accent to-emerald-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative w-24 h-24 bg-sidebar/80 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-accent/20 overflow-hidden shadow-2xl group-hover:scale-105 transition-transform duration-500">
+              <div className="absolute -inset-2 bg-gradient-to-r from-[#76b82a] to-[#008000] rounded-[25%] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+              <div className="relative w-24 h-24 bg-[#1a1a1a] rounded-[25%] flex items-center justify-center overflow-hidden shadow-[0_0_30px_rgba(118,184,42,0.2)] border border-white/5 group-hover:scale-105 transition-transform duration-500">
                 <img 
-                  src="https://ifudxfllenrtbhollajq.supabase.co/storage/v1/object/sign/planilha/Captura%20de%20tela%202026-03-24%20111819.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MzYxYzhmMC1mYjlhLTRlOGItOTFiYi0wZDVhNjdkMDE2YzEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwbGFuaWxoYS9DYXB0dXJhIGRlIHRlbGEgMjAyNi0wMy0yNCAxMTE4MTkucG5nIiwiaWF0IjoxNzc0MzYyMDMzLCJleHAiOjE4MDU4OTgwMzN9.oubsKPfUSCKiH_aXrfTOdLKD0llwDLdWiDIZujFM7C8" 
+                  src="https://ifudxfllenrtbhollajq.supabase.co/storage/v1/object/sign/CONTROLE%20DE%20ABASTECIMENTO%20COCAL%20LOTS/logo%20cocal%20sem%20texto.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80MzYxYzhmMC1mYjlhLTRlOGItOTFiYi0wZDVhNjdkMDE2YzEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJDT05UUk9MRSBERSBBQkFTVEVDSU1FTlRPIENPQ0FMIExPVFMvbG9nbyBjb2NhbCBzZW0gdGV4dG8ucG5nIiwiaWF0IjoxNzc2MjU4MzQ1LCJleHAiOjE4MDc3OTQzNDV9.0Ps4DZ7NlfnnEyoVcygmv_Jet_nifWZC6V-d-BJhLAk" 
                   alt="Logo" 
-                  className="w-full h-full object-contain p-2"
+                  className="w-16 h-16 object-contain"
                   referrerPolicy="no-referrer"
                 />
               </div>
             </div>
             <h1 className="text-xl font-black tracking-tighter text-white uppercase italic">Gestão de Pendências</h1>
             <div className="flex items-center gap-2 mt-1">
-              <div className="h-[1px] w-4 bg-accent/30" />
-              <p className="text-[9px] uppercase tracking-[0.3em] font-black text-white/60">TOMO BI</p>
-              <div className="h-[1px] w-4 bg-accent/30" />
+              <div className="h-[1px] w-4 bg-[#76b82a]/30" />
+              <p className="text-[9px] uppercase tracking-widest font-black text-[#76b82a]">TOMO BI</p>
+              <div className="h-[1px] w-4 bg-[#76b82a]/30" />
             </div>
           </div>
           <button 
             onClick={() => setIsSidebarOpen(false)}
-            className="lg:hidden p-2 text-white/40 hover:text-white transition-colors"
+            className="absolute top-6 right-6 p-2 text-white/40 hover:text-white transition-colors"
           >
             <X size={24} />
           </button>
@@ -477,9 +554,9 @@ export default function App() {
               setActiveTab('dashboard');
               setIsSidebarOpen(false);
             }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 border glow-hover ${activeTab === 'dashboard' ? 'bg-accent/10 text-white border-accent/20 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : 'hover:bg-accent/5 border-transparent text-white/40 hover:text-white'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 border ${activeTab === 'dashboard' ? 'bg-white/10 text-white border-white/20 shadow-lg' : 'bg-white/5 border-transparent text-white/40 hover:text-white hover:bg-white/10'}`}
           >
-            <LayoutDashboard size={18} />
+            <LayoutDashboard size={18} className={activeTab === 'dashboard' ? 'text-[#76b82a]' : ''} />
             <span className="text-sm font-black uppercase tracking-tight">Dashboard</span>
           </button>
           <button 
@@ -487,9 +564,9 @@ export default function App() {
               setActiveTab('occurrences');
               setIsSidebarOpen(false);
             }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 border glow-hover ${activeTab === 'occurrences' ? 'bg-accent/10 text-white border-accent/20 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : 'hover:bg-accent/5 border-transparent text-white/40 hover:text-white'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 border ${activeTab === 'occurrences' ? 'bg-white/10 text-white border-white/20 shadow-lg' : 'bg-white/5 border-transparent text-white/40 hover:text-white hover:bg-white/10'}`}
           >
-            <AlertCircle size={18} />
+            <AlertCircle size={18} className={activeTab === 'occurrences' ? 'text-[#76b82a]' : ''} />
             <span className="text-sm font-black uppercase tracking-tight">Ocorrências</span>
           </button>
           <button 
@@ -497,25 +574,35 @@ export default function App() {
               setActiveTab('actionPlans');
               setIsSidebarOpen(false);
             }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 border glow-hover ${activeTab === 'actionPlans' ? 'bg-accent/10 text-white border-accent/20 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : 'hover:bg-accent/5 border-transparent text-white/40 hover:text-white'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 border ${activeTab === 'actionPlans' ? 'bg-white/10 text-white border-white/20 shadow-lg' : 'bg-white/5 border-transparent text-white/40 hover:text-white hover:bg-white/10'}`}
           >
-            <ClipboardList size={18} />
+            <ClipboardList size={18} className={activeTab === 'actionPlans' ? 'text-[#76b82a]' : ''} />
             <span className="text-sm font-black uppercase tracking-tight">Planos de Ação</span>
+          </button>
+          <button 
+            onClick={() => {
+              setActiveTab('completed');
+              setIsSidebarOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 border ${activeTab === 'completed' ? 'bg-white/10 text-white border-white/20 shadow-lg' : 'bg-white/5 border-transparent text-white/40 hover:text-white hover:bg-white/10'}`}
+          >
+            <CheckCircle2 size={18} className={activeTab === 'completed' ? 'text-[#76b82a]' : ''} />
+            <span className="text-sm font-black uppercase tracking-tight">Concluído</span>
           </button>
         </div>
 
-        <div className="border-t border-accent/10 pt-6 space-y-4">
-          <h3 className="text-[10px] uppercase tracking-widest font-black text-white/30 mb-2">Filtros</h3>
+        <div className="border-t border-white/10 pt-6 space-y-4">
+          <h3 className="text-[10px] uppercase tracking-widest font-black text-white/40 mb-2">Filtros</h3>
           
           <div className="space-y-2">
             <label className="text-[10px] uppercase font-black text-white/40 block mb-1">Unidade</label>
             <select 
               value={selectedUnit}
               onChange={(e) => setSelectedUnit(e.target.value)}
-              className="w-full bg-accent/5 border border-accent/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-accent text-white/80 cursor-pointer appearance-none"
+              className="w-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-[#76b82a]/50 text-white cursor-pointer appearance-none"
             >
               {units.map(u => (
-                <option key={u} value={u} className="bg-sidebar">{u === 'All' ? 'Todas Unidades' : u}</option>
+                <option key={u} value={u} className="bg-black">{u === 'All' ? 'Todas Unidades' : u}</option>
               ))}
             </select>
           </div>
@@ -643,28 +730,29 @@ export default function App() {
       </nav>
 
       {/* Main Content */}
-      <main className="lg:ml-72 min-h-screen bg-bg-dark relative">
+      <main className="min-h-screen bg-black relative max-w-[1200px] w-[90%] mx-auto">
         {/* Background glow */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[150px]" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[150px]" />
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#76b82a]/5 rounded-full blur-[150px]" />
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#76b82a]/5 rounded-full blur-[150px]" />
         </div>
         {/* Header */}
-        <header className="bg-sidebar/50 backdrop-blur-xl border-b border-accent/10 px-4 lg:px-8 py-6 flex justify-between items-center sticky top-0 z-40">
+        <header className="bg-black/40 backdrop-blur-xl border-b border-white/5 px-4 py-6 flex justify-between items-center sticky top-0 z-40">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden p-2 text-white/40 hover:text-white transition-colors"
+              className="p-2 text-white/40 hover:text-white transition-colors"
             >
               <Menu size={24} />
             </button>
             <div>
-              <h2 className="text-xl lg:text-2xl font-black text-white uppercase tracking-tighter italic">
+              <h2 className="text-xl font-black text-white uppercase tracking-tighter italic">
                 {activeTab === 'dashboard' ? 'Dashboard Geral' : 
-                 activeTab === 'occurrences' ? 'Ocorrências Agrícolas' : 'Planos de Ação'}
+                 activeTab === 'occurrences' ? 'Ocorrências Agrícolas' : 
+                 activeTab === 'actionPlans' ? 'Planos de Ação' : 'Itens Concluídos'}
               </h2>
               <div className="flex items-center gap-2 mt-1">
-                <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-[#76b82a] animate-pulse" />
                 <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">
                   {CURRENT_DATE.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
@@ -682,7 +770,7 @@ export default function App() {
           </div>
         </header>
 
-        <div className="p-4 lg:p-8">
+        <div className="p-4">
           <AnimatePresence mode="wait">
             {activeTab === 'dashboard' && !selectedSupervisorDetail && (
               <motion.div 
@@ -694,24 +782,24 @@ export default function App() {
               >
                 {/* Indicators */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-sidebar/40 backdrop-blur-xl border border-accent/10 p-6 rounded-3xl shadow-2xl group hover:border-accent/30 transition-all duration-500">
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] shadow-2xl group hover:bg-white/10 transition-all duration-500">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-accent/10 text-accent rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <div className="w-12 h-12 bg-[#76b82a]/10 text-[#76b82a] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                         <AlertCircle size={24} />
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase tracking-widest font-black text-white/50">Total Ocorrências</p>
+                        <p className="text-[10px] uppercase tracking-widest font-black text-white/40">Total Ocorrências</p>
                         <h4 className="text-3xl font-black text-white italic tracking-tighter">{dashboardStats.totalOccurrences}</h4>
                       </div>
                     </div>
                   </div>
-                  <div className="bg-sidebar/40 backdrop-blur-xl border border-accent/10 p-6 rounded-3xl shadow-2xl group hover:border-accent/30 transition-all duration-500">
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] shadow-2xl group hover:bg-white/10 transition-all duration-500">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-accent/10 text-accent rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <div className="w-12 h-12 bg-[#76b82a]/10 text-[#76b82a] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                         <ClipboardList size={24} />
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase tracking-widest font-black text-white/50">Total Planos</p>
+                        <p className="text-[10px] uppercase tracking-widest font-black text-white/40">Total Planos</p>
                         <h4 className="text-3xl font-black text-white italic tracking-tighter">{dashboardStats.totalActionPlans}</h4>
                       </div>
                     </div>
@@ -951,10 +1039,10 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              {filteredOccurrences.length === 0 ? (
+              {filteredOccurrences.filter(o => !o.isCompleted).length === 0 ? (
                 <div className="p-20 text-center bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-3xl">
                   <AlertCircle size={48} className="mx-auto text-white/20 mb-4" />
-                  <p className="text-white/40 font-black uppercase tracking-widest">Nenhuma ocorrência encontrada com os filtros atuais</p>
+                  <p className="text-white/40 font-black uppercase tracking-widest">Nenhuma ocorrência pendente encontrada</p>
                   <button 
                     onClick={resetFilters}
                     className="mt-4 text-accent hover:underline font-black uppercase tracking-widest text-xs"
@@ -965,70 +1053,41 @@ export default function App() {
               ) : (
                 <>
                   {/* Desktop Table View */}
-                  <div className="hidden lg:block bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-3xl overflow-hidden shadow-2xl">
+                  <div className="hidden lg:block bg-black/40 backdrop-blur-xl border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="bg-accent/5 border-b border-accent/10 text-white/60">
-                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Nº Ocorrência</th>
-                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Unidade</th>
-                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Supervisor</th>
-                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Fazenda / Talhão</th>
-                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Categoria</th>
-                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Observação</th>
+                          <tr className="bg-[#76b82a]/10 border-b border-white/5 text-white/80">
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Id Ocorrência</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Responsável</th>
                             <th className="p-5 text-[10px] uppercase tracking-widest font-black">Data Criação</th>
-                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Status Plano de Ação</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Observação</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Status</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Fazenda</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Talhão</th>
+                            <th className="p-5 text-[10px] uppercase tracking-widest font-black">Setor</th>
                             <th className="p-5 text-[10px] uppercase tracking-widest font-black text-right">Ações</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-accent/10">
-                          {filteredOccurrences.map((occ) => (
-                            <tr key={occ.id} className="hover:bg-accent/5 transition-colors group cursor-pointer">
-                              <td className="p-5 font-mono text-sm font-black text-white/40">{occ.number}</td>
-                              <td className="p-5">
-                                <span className="text-[10px] px-2 py-1 bg-accent/5 text-white/80 rounded-md font-black border border-accent/10 uppercase tracking-widest whitespace-nowrap">{occ.unit}</span>
-                              </td>
+                        <tbody className="divide-y divide-white/5">
+                          {filteredOccurrences.filter(o => !o.isCompleted).map((occ) => (
+                            <tr key={occ.id} className="hover:bg-white/5 transition-colors group cursor-pointer">
+                              <td className="p-5 font-mono text-sm font-black text-white/60">{occ.number}</td>
                               <td className="p-5 text-sm text-white font-black">{occ.supervisor}</td>
+                              <td className="p-5 text-xs text-white/60 font-mono font-black">{formatDateSafe(occ.createdAt)}</td>
+                              <td className="p-5 text-xs text-white/60 line-clamp-2 max-w-[200px]">{occ.observation || '-'}</td>
                               <td className="p-5">
-                                <div className="text-sm font-black text-white uppercase tracking-tight">{occ.farm}</div>
-                                <div className="text-[10px] text-white/60 uppercase font-black tracking-widest mt-1">Talhão: {occ.plot}</div>
-                                {occ.sector && <div className="text-[10px] text-white/60 uppercase font-black tracking-widest mt-1">Setor: {occ.sector}</div>}
-                              </td>
-                              <td className="p-5">
-                                <div 
-                                  className="text-sm font-black text-white cursor-pointer hover:text-emerald-600 uppercase tracking-tight transition-colors"
-                                  onClick={() => setSelectedOccurrence(occ)}
-                                >
-                                  {occ.category}
-                                </div>
-                                <div 
-                                  className="text-[10px] text-white/60 italic mt-1 cursor-pointer hover:text-emerald-600 transition-colors"
-                                  onClick={() => setSelectedOccurrence(occ)}
-                                >
-                                  {occ.subcategory}
-                                </div>
-                              </td>
-                              <td className="p-5">
-                                <div className="text-xs text-white/60 line-clamp-2 max-w-[200px]">{occ.observation || '-'}</div>
-                              </td>
-                              <td className="p-5 text-xs text-white/60 font-mono font-black">
-                                {formatDateSafe(occ.createdAt)}
-                              </td>
-                              <td className="p-5">
-                                <span className={`text-[10px] px-2 py-1 rounded-md font-black border uppercase tracking-widest whitespace-nowrap ${
-                                  occ.actionPlanStatus?.toLowerCase().includes('concluído') || occ.actionPlanStatus?.toLowerCase().includes('concluido')
-                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                                    : occ.actionPlanStatus?.toLowerCase().includes('andamento')
-                                      ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                                      : 'bg-white/5 text-white/40 border-white/10'
-                                }`}>
-                                  {occ.actionPlanStatus || '-'}
+                                <span className="text-[10px] px-2 py-1 bg-white/5 text-white/60 rounded-md font-black border border-white/10 uppercase tracking-widest whitespace-nowrap">
+                                  {occ.actionPlanStatus || 'Pendente'}
                                 </span>
                               </td>
+                              <td className="p-5 text-sm font-black text-white uppercase tracking-tight">{occ.farm}</td>
+                              <td className="p-5 text-sm font-black text-white uppercase tracking-tight">{occ.plot}</td>
+                              <td className="p-5 text-sm font-black text-white uppercase tracking-tight">{occ.sector || '-'}</td>
                               <td className="p-5 text-right">
                                 <button 
                                   onClick={() => setSelectedOccurrence(occ)}
-                                  className="p-2 hover:bg-accent/10 rounded-xl text-white/40 hover:text-white transition-all hover:scale-110"
+                                  className="p-2 hover:bg-[#76b82a]/20 rounded-xl text-white/40 hover:text-white transition-all hover:scale-110"
                                 >
                                   <Eye size={18} />
                                 </button>
@@ -1042,11 +1101,11 @@ export default function App() {
 
                   {/* Mobile Card View */}
                   <div className="lg:hidden space-y-4">
-                    {filteredOccurrences.map((occ) => (
+                    {filteredOccurrences.filter(o => !o.isCompleted).map((occ) => (
                       <div 
                         key={occ.id} 
                         onClick={() => setSelectedOccurrence(occ)}
-                        className="bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-2xl p-5 shadow-lg active:scale-[0.98] transition-all"
+                        className="bg-white/5 backdrop-blur-2xl border border-white/5 rounded-[1.5rem] p-4 hover:bg-white/10 transition-all active:scale-[0.98]"
                       >
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex flex-col gap-1">
@@ -1102,10 +1161,10 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              {filteredActionPlans.length === 0 ? (
+              {filteredActionPlans.filter(ap => !ap.isCompleted).length === 0 ? (
                 <div className="p-20 text-center bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-3xl">
                   <ClipboardList size={48} className="mx-auto text-white/20 mb-4" />
-                  <p className="text-white/40 font-black uppercase tracking-widest">Nenhum plano de ação encontrado com os filtros atuais</p>
+                  <p className="text-white/40 font-black uppercase tracking-widest">Nenhum plano de ação pendente encontrado</p>
                   <button 
                     onClick={resetFilters}
                     className="mt-4 text-accent hover:underline font-black uppercase tracking-widest text-xs"
@@ -1114,146 +1173,193 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-                filteredActionPlans.map((ap) => {
-                  const occ = occurrenceMap[ap.occurrenceId];
-
-                  return (
-                    <div key={ap.id} className="bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-3xl p-5 lg:p-8 shadow-2xl hover:border-accent/30 transition-all group relative overflow-hidden">
-                      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${ap.isCompleted ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
-                      
-                      <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 pl-4">
-                        <div className="flex-grow">
-                          <div className="flex flex-wrap items-center gap-3 mb-4 lg:mb-6">
-                            <span 
-                              className="text-[10px] font-mono bg-accent/10 text-white/60 px-3 py-1 rounded-md border border-accent/10 cursor-pointer hover:bg-accent hover:text-white transition-colors uppercase tracking-widest font-black"
-                              onClick={() => occ && setSelectedOccurrence(occ)}
-                            >
-                              {ap.occurrenceId}
-                            </span>
-                            <span className="text-accent/20">•</span>
-                            <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">{ap.unit}</span>
-                            {occ && (
-                              <>
-                                <span className="text-accent/20">•</span>
-                                <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">{occ.category}</span>
-                              </>
-                            )}
-                            {ap.isCompleted ? (
-                              <span className="lg:ml-auto text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-600/10 px-3 py-1 rounded-full border border-emerald-600/20">Concluído</span>
-                            ) : (
-                              <span className="lg:ml-auto text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-600/10 px-3 py-1 rounded-full border border-amber-600/20 flex items-center gap-1">
-                                <Clock size={10} /> Pendente
-                              </span>
-                            )}
+                <>
+                  <div className="hidden lg:block bg-black/40 backdrop-blur-xl border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-[#76b82a]/10 border-b border-white/5 text-white/80">
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Dias_restantes</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Responsável</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Data Início</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Descrição</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Status</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Fazenda</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Talhão</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black text-right">Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {filteredActionPlans.filter(ap => !ap.isCompleted).map((ap) => {
+                            const occ = occurrenceMap[ap.occurrenceId];
+                            return (
+                              <tr key={ap.id} className="hover:bg-white/5 transition-colors group cursor-pointer">
+                                <td className="p-3 font-mono text-sm font-black text-white/60">{ap.endDate ? Math.ceil((new Date(ap.endDate).getTime() - new Date().setHours(0,0,0,0)) / (1000 * 60 * 60 * 24)) : '-'}</td>
+                                <td className="p-3 text-sm text-white font-black">{ap.supervisor || (occ?.supervisor || '-')}</td>
+                                <td className="p-3 text-xs text-white/60 font-mono font-black">{formatDateSafe(ap.startDate)}</td>
+                                <td className="p-3 text-xs text-white/60 line-clamp-2 max-w-[200px]">{ap.description}</td>
+                                <td className="p-3">
+                                  <span className="text-[10px] px-2 py-1 bg-amber-500/10 text-amber-500 rounded-md font-black border border-amber-500/20 uppercase tracking-widest whitespace-nowrap">
+                                    Pendente
+                                  </span>
+                                </td>
+                                <td className="p-3 text-sm font-black text-white uppercase tracking-tight">{ap.farm || occ?.farm || '-'}</td>
+                                <td className="p-3 text-sm font-black text-white uppercase tracking-tight">{ap.plot || occ?.plot || '-'}</td>
+                                <td className="p-3 text-right">
+                                  <button 
+                                    onClick={() => setSelectedOccurrence(occ)}
+                                    className="p-2 hover:bg-[#76b82a]/20 rounded-xl text-white/40 hover:text-white transition-all hover:scale-110"
+                                  >
+                                    <Eye size={18} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div className="lg:hidden space-y-4">
+                    {filteredActionPlans.filter(ap => !ap.isCompleted).map((ap) => {
+                      const occ = occurrenceMap[ap.occurrenceId];
+                      return (
+                        <div key={ap.id} className="bg-white/5 backdrop-blur-2xl border border-white/5 rounded-[1.5rem] p-4 hover:bg-white/10 transition-all">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="text-[10px] font-mono font-black text-white/40 uppercase tracking-widest">Dias_restantes: {ap.endDate ? Math.ceil((new Date(ap.endDate).getTime() - new Date().setHours(0,0,0,0)) / (1000 * 60 * 60 * 24)) : '-'}</span>
+                            <span className="text-[10px] px-2 py-1 bg-amber-500/10 text-amber-500 rounded-md font-black border border-amber-500/20 uppercase tracking-widest">Pendente</span>
                           </div>
-                          
-                          <h4 className="text-xl lg:text-2xl font-black mb-2 text-white uppercase tracking-tighter italic">{ap.description}</h4>
-                          
-                          {occ?.observation && (
-                            <p className="text-xs text-white/40 italic mb-4 line-clamp-2">
-                              Obs: {occ.observation}
-                            </p>
-                          )}
-                          
-                          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-                            <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
-                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Fazenda</span>
-                              <span className="text-xs font-black text-white uppercase tracking-tight">{ap.farm || '-'}</span>
-                            </div>
-                            <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
-                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Talhão</span>
-                              <span className="text-xs font-black text-white uppercase tracking-tight">{ap.plot || '-'}</span>
-                            </div>
-                            <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
-                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Criação</span>
-                              <span className="text-xs font-black text-white uppercase tracking-tight">{formatDateSafe(ap.createdAt)}</span>
-                            </div>
-                            <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
-                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Início</span>
-                              <span className="text-xs font-black text-white uppercase tracking-tight">{formatDateSafe(ap.startDate)}</span>
-                            </div>
-                            <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
-                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">Prazo Final</span>
-                              <span className="text-xs font-black text-white uppercase tracking-tight">{formatDateSafe(ap.endDate)}</span>
-                            </div>
-                            <div className="bg-accent/5 p-3 rounded-xl border border-accent/10">
-                              <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-1">ID Ocorrência</span>
-                              <span className="text-xs font-black text-white uppercase tracking-tight">{ap.occurrenceId}</span>
-                            </div>
-                          </div>
-
-                          {ap.rawData && (
-                            <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6 p-6 bg-accent/5 rounded-2xl border border-accent/10">
-                              {Object.entries(ap.rawData).map(([key, value]) => {
-                                const lowerKey = key.toLowerCase();
-                                if (!value || 
-                                    ['id', 'occurrenceid', 'unit', 'creator', 'supervisor', 'createdat', 'startdate', 'enddate', 'description', 'iscompleted', 'rawData', 'farm', 'plot', 'excluída', 'excluida', 'id ocorrência', 'id ocorrencia'].includes(lowerKey) ||
-                                    lowerKey.includes('data') || 
-                                    lowerKey === 'responsável' || 
-                                    lowerKey === 'responsavel' ||
-                                    lowerKey === 'descrição' ||
-                                    lowerKey === 'descricao' ||
-                                    lowerKey === 'unidade' ||
-                                    lowerKey === 'usina' ||
-                                    lowerKey === 'ocorrência' ||
-                                    lowerKey === 'ocorrencia' ||
-                                    lowerKey === 'fazenda' ||
-                                    lowerKey === 'talhão' ||
-                                    lowerKey === 'talhao' ||
-                                    lowerKey === 'concluída' ||
-                                    lowerKey === 'concluida' ||
-                                    lowerKey === 'criador'
-                                ) return null;
-                                
-                                const isDate = lowerKey.includes('data') || lowerKey.includes('início') || lowerKey.includes('inicio') || lowerKey.includes('fim') || lowerKey.includes('prazo') || lowerKey.includes('vencimento');
-                                const displayValue = isDate ? formatDateSafe(String(value)) : String(value);
-                                
-                                return (
-                                  <div key={key} className={`flex flex-col p-2 rounded-lg transition-all ${
-                                    lowerKey === 'dias_restantes' ? 'bg-orange-500/20 border border-orange-500/30' : 
-                                    (lowerKey.includes('início') || lowerKey.includes('inicio') || lowerKey.includes('fim') || lowerKey.includes('prazo')) ? 'bg-accent/20 border border-accent/30' : ''
-                                  }`}>
-                                    <span className={`text-[10px] uppercase font-black tracking-widest truncate ${
-                                      lowerKey === 'dias_restantes' ? 'text-orange-400' : 
-                                      (lowerKey.includes('início') || lowerKey.includes('inicio') || lowerKey.includes('fim') || lowerKey.includes('prazo')) ? 'text-white' : 'text-white/40'
-                                    }`} title={key}>{key}</span>
-                                    <span className={`text-xs font-black uppercase tracking-tight ${
-                                      lowerKey === 'dias_restantes' ? 'text-orange-500 text-lg' : 
-                                      (lowerKey.includes('início') || lowerKey.includes('inicio') || lowerKey.includes('fim') || lowerKey.includes('prazo')) ? 'text-white' : 'text-white'
-                                    }`}>{displayValue}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                          
-                          <div className="flex flex-wrap gap-8 mt-8 pt-8 border-t border-accent/10">
-                            <div className="flex items-center gap-2 text-[10px] text-white/60 uppercase tracking-widest">
-                              <User size={14} className="text-white" />
-                              <span className="font-black">Resp: <span className="text-white">{ap.supervisor}</span></span>
-                            </div>
+                          <h4 className="text-sm font-black text-white uppercase tracking-tight mb-2">{ap.description}</h4>
+                          <div className="flex justify-between text-[10px] font-black text-white/60 uppercase tracking-widest">
+                            <span>{ap.farm || occ?.farm || '-'}</span>
+                            <span>{ap.plot || occ?.plot || '-'}</span>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })
+                      );
+                    })}
+                  </div>
+                </>
               )}
+            </motion.div>
+          )}
+
+          {activeTab === 'completed' && (
+            <motion.div 
+              key="completed"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-8"
+            >
+              {/* Completed Occurrences Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                  <div className="w-1 h-4 bg-emerald-500 rounded-full"></div>
+                  Ocorrências Concluídas
+                </h3>
+                {filteredOccurrences.filter(o => o.isCompleted).length === 0 ? (
+                  <div className="p-10 text-center bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-3xl">
+                    <p className="text-white/40 font-black uppercase tracking-widest text-xs">Nenhuma ocorrência concluída encontrada</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredOccurrences.filter(o => o.isCompleted).map((occ) => (
+                      <div 
+                        key={occ.id} 
+                        onClick={() => setSelectedOccurrence(occ)}
+                        className="bg-white/5 backdrop-blur-2xl border border-white/5 rounded-[1.5rem] p-5 shadow-lg hover:bg-white/10 transition-all cursor-pointer group"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <span className="text-[10px] font-mono font-black text-white/40 uppercase tracking-widest">Nº {occ.number}</span>
+                          <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+                        </div>
+                        <h4 className="text-sm font-black text-white uppercase tracking-tight mb-2">{occ.category}</h4>
+                        <div className="flex justify-between items-center text-[9px] text-white/40 font-black uppercase tracking-widest">
+                          <span>{occ.farm}</span>
+                          <span>{formatDateSafe(occ.createdAt)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Completed Action Plans Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                  <div className="w-1 h-4 bg-emerald-500 rounded-full"></div>
+                  Planos de Ação Concluídos
+                </h3>
+                {filteredActionPlans.filter(ap => ap.isCompleted).length === 0 ? (
+                  <div className="p-10 text-center bg-sidebar/40 backdrop-blur-xl border border-accent/10 rounded-3xl">
+                    <p className="text-white/40 font-black uppercase tracking-widest text-xs">Nenhum plano de ação concluído encontrado</p>
+                  </div>
+                ) : (
+                  <div className="hidden lg:block bg-black/40 backdrop-blur-xl border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-[#76b82a]/10 border-b border-white/5 text-white/80">
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Id Ocorrência</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Responsável</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Data Conclusão</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Descrição</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Status</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Fazenda</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Talhão</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black">Setor</th>
+                            <th className="p-3 text-[10px] uppercase tracking-widest font-black text-right">Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {filteredActionPlans.filter(ap => ap.isCompleted).map((ap) => {
+                            const occ = occurrenceMap[ap.occurrenceId];
+                            return (
+                              <tr key={ap.id} className="hover:bg-white/5 transition-colors group cursor-pointer">
+                                <td className="p-3 font-mono text-sm font-black text-white/60">{ap.occurrenceId}</td>
+                                <td className="p-3 text-sm text-white font-black">{ap.supervisor || (occ?.supervisor || '-')}</td>
+                                <td className="p-3 text-xs text-white/60 font-mono font-black">{formatDateSafe(ap.endDate)}</td>
+                                <td className="p-3 text-xs text-white/60 line-clamp-2 max-w-[200px]">{ap.description}</td>
+                                <td className="p-3">
+                                  <span className="text-[10px] px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded-md font-black border border-emerald-500/20 uppercase tracking-widest whitespace-nowrap">
+                                    Concluído
+                                  </span>
+                                </td>
+                                <td className="p-3 text-sm font-black text-white uppercase tracking-tight">{ap.farm || occ?.farm || '-'}</td>
+                                <td className="p-3 text-sm font-black text-white uppercase tracking-tight">{ap.plot || occ?.plot || '-'}</td>
+                                <td className="p-3 text-sm font-black text-white uppercase tracking-tight">{occ?.sector || '-'}</td>
+                                <td className="p-3 text-right">
+                                  <button 
+                                    onClick={() => setSelectedOccurrence(occ)}
+                                    className="p-2 hover:bg-[#76b82a]/20 rounded-xl text-white/40 hover:text-white transition-all hover:scale-110"
+                                  >
+                                    <Eye size={18} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
         {selectedOccurrence && (
-          <div className="fixed inset-0 bg-accent/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              className="bg-sidebar border border-accent/10 rounded-3xl p-10 max-w-lg w-full shadow-[0_0_50px_rgba(6,78,59,0.1)] relative overflow-hidden"
+              className="bg-black border border-white/10 rounded-[2rem] p-10 max-w-lg w-full shadow-2xl relative overflow-hidden"
             >
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-accent to-transparent opacity-50"></div>
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#76b82a] to-transparent opacity-50"></div>
               
               <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic mb-8 flex items-center gap-3">
-                <div className="w-2 h-8 bg-accent rounded-full"></div>
+                <div className="w-2 h-8 bg-[#76b82a] rounded-full"></div>
                 Detalhes da Ocorrência
               </h2>
               
@@ -1329,7 +1435,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="p-6 bg-accent/5 rounded-2xl border border-accent/10">
+                <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
                   <span className="text-[10px] uppercase font-black text-white/40 tracking-widest block mb-3">Observação</span>
                   <p className="text-sm text-white/80 italic leading-relaxed">{selectedOccurrence.observation || 'Sem observações.'}</p>
                 </div>
@@ -1337,7 +1443,7 @@ export default function App() {
 
               <button 
                 onClick={() => setSelectedOccurrence(null)}
-                className="mt-10 w-full py-4 bg-accent text-white rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all shadow-xl active:scale-95"
+                className="mt-10 w-full py-4 bg-[#76b82a] text-white rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-[#008000] transition-all shadow-xl active:scale-95"
               >
                 Fechar
               </button>

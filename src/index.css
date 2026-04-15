@@ -5,11 +5,11 @@
   --font-serif: "Inter", Arial, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
-  --color-bg-dark: #011a13;
-  --color-sidebar: #022c22;
-  --color-accent: #22c55e;
+  --color-bg-dark: #000000;
+  --color-sidebar: #000000;
+  --color-accent: #76b82a;
   --color-text-main: #ffffff; /* Pure white text */
-  --color-metallic: #10b981;
+  --color-metallic: #008000;
 }
 
 @utility glow-hover {
