@@ -1194,7 +1194,7 @@ export default function App() {
                             const occ = occurrenceMap[ap.occurrenceId];
                             return (
                               <tr key={ap.id} className="hover:bg-white/5 transition-colors group cursor-pointer">
-                                <td className="p-3 font-mono text-sm font-black text-white/60">{ap.endDate ? Math.ceil((new Date(ap.endDate).getTime() - new Date().setHours(0,0,0,0)) / (1000 * 60 * 60 * 24)) : '-'}</td>
+                                <td className="p-3 font-mono text-sm font-black text-white/60">{ap.rawData?.['Dias_restantes'] ?? ap.rawData?.['Dias restantes'] ?? ap.rawData?.['Prazo'] ?? (ap.endDate ? Math.ceil((new Date(ap.endDate).getTime() - new Date().setHours(0,0,0,0)) / (1000 * 60 * 60 * 24)) : '-')}</td>
                                 <td className="p-3 text-sm text-white font-black">{ap.supervisor || (occ?.supervisor || '-')}</td>
                                 <td className="p-3 text-xs text-white/60 font-mono font-black">{formatDateSafe(ap.startDate)}</td>
                                 <td className="p-3 text-xs text-white/60 line-clamp-2 max-w-[200px]">{ap.description}</td>
@@ -1226,7 +1226,7 @@ export default function App() {
                       return (
                         <div key={ap.id} className="bg-white/5 backdrop-blur-2xl border border-white/5 rounded-[1.5rem] p-4 hover:bg-white/10 transition-all">
                           <div className="flex justify-between items-start mb-2">
-                            <span className="text-[10px] font-mono font-black text-white/40 uppercase tracking-widest">Dias_restantes: {ap.endDate ? Math.ceil((new Date(ap.endDate).getTime() - new Date().setHours(0,0,0,0)) / (1000 * 60 * 60 * 24)) : '-'}</span>
+                            <span className="text-[10px] font-mono font-black text-white/40 uppercase tracking-widest">Dias_restantes: {ap.rawData?.['Dias_restantes'] ?? ap.rawData?.['Dias restantes'] ?? ap.rawData?.['Prazo'] ?? (ap.endDate ? Math.ceil((new Date(ap.endDate).getTime() - new Date().setHours(0,0,0,0)) / (1000 * 60 * 60 * 24)) : '-')}</span>
                             <span className="text-[10px] px-2 py-1 bg-amber-500/10 text-amber-500 rounded-md font-black border border-amber-500/20 uppercase tracking-widest">Pendente</span>
                           </div>
                           <h4 className="text-sm font-black text-white uppercase tracking-tight mb-2">{ap.description}</h4>
